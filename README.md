@@ -1,13 +1,12 @@
-# Real Ditial Terraform
+# AWS - Real Digital with EKS and Terraform
 
 ## Pre-reqs
 
 - terraform 1.5.0
-- AWS EKS blueprints 5.0
 - AWS CLI >= 2.3.1
+- jq 1.6
 
-### How to deploy
-
+## How to deploy
 
 ```bash
 git clone https://github.com/aws-samples/aws-besu-realdigital.git
@@ -23,11 +22,14 @@ patch -p1 < ../patch/helm/charts/besu-node.patch
 
 #Helm Values patch
 patch -p1 < ../patch/helm/values/values.patch
-cd ..
+
+#Ingress Rules patch
+patch -p1 < ../patch/ingress/ingress-rules-monitoring.patch
 ```
 
 ```bash
 # Creating EKS and all infra needed to deploy Besu
+cd ..
 terraform init && \
 terraform apply -target module.vpc -auto-approve && \
 terraform apply -target module.eks -auto-approve && \
@@ -40,7 +42,7 @@ terraform apply -target helm_release.member-2 -auto-approve && \
 terraform apply -auto-approve
 ```
 
-### Validate
+## Validate
 
 Run `update-kubeconfig` command:
 
@@ -50,8 +52,8 @@ aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME
 
 ### Ingress Services
 
-Monitoring Ingress controller LoadBalancer
 
+Monitoring Ingress controller LoadBalancer
 ```bash
 ELB=$(kubectl get -n besu service quorum-monitoring-ingress-ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].hostname')
 echo "http://${ELB}"
@@ -63,8 +65,8 @@ echo "http://${ELB}"
 - Explorer URL http://${ELB}/explorer
 - BlockScout URL http://${ELB}/blockscout
 
-Configuring Index Pattern in Kibana
 
+Configuring Index Pattern in Kibana
 ```bash
 curl -X POST http://${ELB}/kibana/api/index_patterns/index_pattern -H "kbn-xsrf: true" -H "Content-Type: application/json" -d '{
   "index_pattern": {
@@ -74,8 +76,8 @@ curl -X POST http://${ELB}/kibana/api/index_patterns/index_pattern -H "kbn-xsrf:
 }' 
 ```
 
-Acessing Prometheus
 
+Acessing Prometheus
 ```bash
 kubectl port-forward service/monitoring-kube-prometheus-prometheus 8080:9090 -n besu
 open browser http://localhost:8080
@@ -87,7 +89,7 @@ open browser http://localhost:8080
 curl -v -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' "http://${ELB}/rpc"
 ```
 
-### Stop and Start Besu
+## Stop and Start Besu
 
 STOP
 
@@ -121,7 +123,7 @@ kubectl scale statefulset/besu-node-member-1 --replicas 1 -n besu
 kubectl scale statefulset/besu-node-member-2 --replicas 1 -n besu
 ```
 
-#### Installing Sirato
+## Installing Sirato - Optional
 
 ```bash
 git clone https://github.com/web3labs/sirato-free.git
@@ -132,13 +134,13 @@ cd sirato-free/k8s
 kubectl get service/sirato-proxy -n sirato-explorer -ojsonpath='External: http://{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 ```
 
-### Troubleshooting
+## Troubleshooting
 
 ```bash
 kubectl run mycurlpod --rm --image=curlimages/curl -i --tty -- sh
 ```
 
-### How to destroy
+## How to destroy
 
 ```bash
 kubectl delete namespace sirato-explorer

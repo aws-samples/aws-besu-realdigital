@@ -1,0 +1,2793 @@
+diff -Naur quorum-kubernetes/helm/values/blockscout-goquorum.yml quorum-kubernetes/helm/values/blockscout-goquorum.yml
+--- quorum-kubernetes/helm/values/blockscout-goquorum.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/blockscout-goquorum.yml	1969-12-31 21:00:00.000000000 -0300
+@@ -1,33 +0,0 @@
+----
+-image:
+-  blockscout:
+-    repository: consensys/blockscout
+-    tag: v4.0.0-beta
+-    pullPolicy: IfNotPresent
+-
+-postgresql:
+-  postgresqlDatabase: postgres
+-  postgresqlUsername: postgres
+-  postgresqlPassword: postgres
+-  initdbUser: postgres
+-  initdbPassword: postgres
+-  enabled: true
+-
+-blockscout: # cpu dependent
+-  resources:
+-    cpuLimit: 0.7
+-    cpuRequest: 0.5
+-    memLimit: "2G"
+-    memRequest: "1G"
+-  port: 4000
+-  database_url: "ecto://postgres:postgres@blockscout-postgresql/postgres?ssl=false"
+-  postgres_password: postgres
+-  postgres_user: postgres
+-  network: quorum
+-  subnetwork: consensys
+-  chain_id: 1337
+-  coin: eth
+-  ethereum_jsonrpc_variant: geth
+-  ethereum_jsonrpc_transport: http
+-  ethereum_jsonrpc_endpoint: "goquorum-node-member-1" # service name to be used
+-  secret_key_base: "VTIB3uHDNbvrY0+60ZWgUoUBKDn9ppLR8MI4CpRz4/qLyEFs54ktJfaNT6Z221" # change me please
+diff -Naur quorum-kubernetes/helm/values/bootnode.yml quorum-kubernetes/helm/values/bootnode.yml
+--- quorum-kubernetes/helm/values/bootnode.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/bootnode.yml	2023-07-04 18:31:46.000000000 -0300
+@@ -7,30 +7,19 @@
+   usesBootnodes: true # Besu only, set this to true if the network you are connecting to use a bootnode/s that are deployed in the cluster 
+ 
+ cluster:
+-  provider: local  # choose from: local | aws | azure
+-  cloudNativeServices: false 
++  provider: aws  # choose from: local | aws
++  cloudNativeServices: true 
+   reclaimPolicy: Delete # set to either Retain or Delete; note that PVCs and PVs will still exist after a 'helm delete'. Setting to Retain will keep volumes even if PVCs/PVs are deleted in kubernetes. Setting to Delete will remove volumes from EC2 EBS when PVC is deleted
+ 
+ aws:
+   # the aws cli commands uses the name 'quorum-node-secrets-sa' so only change this if you altered the name
+   serviceAccountName: quorum-node-secrets-sa
+   # the region you are deploying to
+-  region: ap-southeast-2
+-
+-azure:
+-  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
+-  identityName: quorum-pod-identity
+-  # the clientId of the user assigned managed identity created in the template
+-  identityClientId: azure-clientId
+-  keyvaultName: azure-keyvault
+-  # the tenant ID of the key vault
+-  tenantId: azure-tenantId
+-  # the subscription ID to use - this needs to be set explictly when using multi tenancy
+-  subscriptionId: azure-subscriptionId
++  region: us-east-1
+ 
+ node:
+   besu:
+-    envBesuOpts: ""  
++    envBesuOpts: ""
+     metrics:
+       serviceMonitorEnabled: true
+     resources:
+@@ -42,4 +31,5 @@
+       password: 'password'
+     customLabels:
+       nodeType: bootnode
+-
++    logging: DEBUG
++    overwrite: true
+diff -Naur quorum-kubernetes/helm/values/explorer-besu.yaml quorum-kubernetes/helm/values/explorer-besu.yaml
+--- quorum-kubernetes/helm/values/explorer-besu.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/explorer-besu.yaml	2023-07-04 18:31:46.000000000 -0300
+@@ -16,50 +16,42 @@
+   "nodes": [{
+       "name": "validator1",
+       "client": "besu",
+-      "rpcUrl": "http://besu-node-validator-1-0.besu-node-validator-1.quorum.svc.cluster.local:8545",
++      "rpcUrl": "http://besu-node-validator-1.besu.svc.cluster.local:8545",
+       "privateTxUrl": ""
+     },
+     {
+       "name": "validator2",
+       "client": "besu",
+-      "rpcUrl": "http://besu-node-validator-2-0.besu-node-validator-2.quorum.svc.cluster.local:8545",
++      "rpcUrl": "http://besu-node-validator-2.besu.svc.cluster.local:8545",
+       "privateTxUrl": ""
+     },
+     {
+       "name": "validator3",
+       "client": "besu",
+-      "rpcUrl": "http://besu-node-validator-3-0.besu-node-validator-3.quorum.svc.cluster.local:8545",
++      "rpcUrl": "http://besu-node-validator-3.besu.svc.cluster.local:8545",
+       "privateTxUrl": ""
+     },
+     {
+       "name": "validator4",
+       "client": "besu",
+-      "rpcUrl": "http://besu-node-validator-4-0.besu-node-validator-4.quorum.svc.cluster.local:8545",
++      "rpcUrl": "http://besu-node-validator-4.besu.svc.cluster.local:8545",
+       "privateTxUrl": ""
+     },
+     {
+       "name": "member1",
+       "client": "besu",
+-      "rpcUrl": "http://besu-node-member-1-0.besu-node-member-1.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": "http://besu-node-member-1.quorum.svc.cluster.local:9080",
+-      "privateKey": "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
+-      "accountAddress": "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73"
++      "rpcUrl": "http://besu-node-member-1.besu.svc.cluster.local:8545",
++      "privateTxUrl": "http://besu-node-member-1.besu.svc.cluster.local:9080",
++      "privateKey": "0x6b5ee9334c05d09eb935d90b3227e6922fcc70dca315f9a970973b7ade7e58ca",
++      "accountAddress": "0x16b66b29c7a88cb91f51946db99de77e21dcb155"
+     },
+     {
+       "name": "member2",
+       "client": "besu",
+-      "rpcUrl": "http://besu-node-member-2-0.besu-node-member-2.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": "http://besu-node-member-2.quorum.svc.cluster.local:9080",
+-      "privateKey": "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3",
+-      "accountAddress": "0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
+-    },
+-    {
+-      "name": "member3",
+-      "client": "besu",
+-      "rpcUrl": "http://besu-node-member-3-0.besu-node-member-3.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": "http://besu-node-member-3.quorum.svc.cluster.local:9080",
+-      "privateKey": "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f",
+-      "accountAddress": "0xf17f52151EbEF6C7334FAD080c5704D77216b732"
++      "rpcUrl": "http://besu-node-member-2.besu.svc.cluster.local:8545",
++      "privateTxUrl": "http://besu-node-member-2.besu.svc.cluster.local:9080",
++      "privateKey": "0x7e3446c09086c76e50e433f479da1a745b34b4ec32e38b8af83bac6654105e9b",
++      "accountAddress": "0xee1d18f45ea4fcb8fe99792dd257731c56fac722"
+     }
+   ]
+   }
+diff -Naur quorum-kubernetes/helm/values/explorer-goquorum.yaml quorum-kubernetes/helm/values/explorer-goquorum.yaml
+--- quorum-kubernetes/helm/values/explorer-goquorum.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/explorer-goquorum.yaml	1969-12-31 21:00:00.000000000 -0300
+@@ -1,117 +0,0 @@
+-image:
+-  explorer:
+-    repository: consensys/quorum-explorer
+-    tag: e175e0b
+-    pullPolicy: Always #IfNotPresent
+-
+-resources:
+-  requests:
+-    cpu: 1000m
+-    memory: 1G
+-
+-# This contains the quorum-dev-quickstart test accounts but can be changed to the generated member accounts or your own choice
+-explorerConfig: |
+-  {
+-  "algorithm": "qbft",
+-  "nodes": [{
+-      "name": "validator1",
+-      "client": "goquorum",
+-      "rpcUrl": "http://goquorum-node-validator-1-0.goquorum-node-validator-1.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": ""
+-    },
+-    {
+-      "name": "validator2",
+-      "client": "goquorum",
+-      "rpcUrl": "http://goquorum-node-validator-2-0.goquorum-node-validator-2.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": ""
+-    },
+-    {
+-      "name": "validator3",
+-      "client": "goquorum",
+-      "rpcUrl": "http://goquorum-node-validator-3-0.goquorum-node-validator-3.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": ""
+-    },
+-    {
+-      "name": "validator4",
+-      "client": "goquorum",
+-      "rpcUrl": "http://goquorum-node-validator-4-0.goquorum-node-validator-4.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": ""
+-    },
+-    {
+-      "name": "member1",
+-      "client": "goquorum",
+-      "rpcUrl": "http://goquorum-node-member-1-0.goquorum-node-member-1.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": "http://goquorum-node-member-1.quorum.svc.cluster.local:9080",
+-      "privateKey": "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
+-      "accountAddress": "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73"
+-    },
+-    {
+-      "name": "member2",
+-      "client": "goquorum",
+-      "rpcUrl": "http://goquorum-node-member-2-0.goquorum-node-member-2.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": "http://goquorum-node-member-2.quorum.svc.cluster.local:9080",
+-      "privateKey": "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3",
+-      "accountAddress": "0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
+-    },
+-    {
+-      "name": "member3",
+-      "client": "goquorum",
+-      "rpcUrl": "http://goquorum-node-member-3-0.goquorum-node-member-3.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": "http://goquorum-node-member-3.quorum.svc.cluster.local:9080",
+-      "privateKey": "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f",
+-      "accountAddress": "0xf17f52151EbEF6C7334FAD080c5704D77216b732"
+-    }
+-  ]
+-  }
+-
+-explorerEnvConfig: |-
+-  QE_BASEPATH="/explorer"
+-  QE_CONFIG_PATH="/app/config.json"
+-  NODE_ENV=production
+-
+-  DISABLE_AUTH=true
+-
+-  NEXTAUTH_URL=http://localhost:25000
+-  NEXTAUTH_URL_INTERNAL=http://localhost:25000
+-  NEXTAUTH_SECRET=
+-  # To generate NEXTAUTH_SECRET: `openssl rand -hex 32` or go to https://generate-secret.now.sh/32
+-
+-  local_username=
+-  local_password=
+-
+-  GITHUB_ID=
+-  GITHUB_SECRET=
+-
+-  AUTH0_ID=
+-  AUTH0_SECRET=
+-  AUTH0_DOMAIN=
+-
+-  FACEBOOK_ID=
+-  FACEBOOK_SECRET=
+-
+-  GOOGLE_ID=
+-  GOOGLE_SECRET=
+-
+-  TWITTER_ID=
+-  TWITTER_SECRET=
+-
+-  GITLAB_CLIENT_ID=
+-  GITLAB_CLIENT_SECRET=
+-
+-  AZURE_AD_CLIENT_ID=
+-  AZURE_AD_CLIENT_SECRET=
+-  AZURE_AD_TENANT_ID=
+-
+-  ATLASSIAN_CLIENT_ID=
+-  ATLASSIAN_CLIENT_SECRET=
+-
+-  COGNITO_CLIENT_ID=
+-  COGNITO_CLIENT_SECRET=
+-  COGNITO_ISSUER=
+-
+-  OKTA_CLIENT_ID=
+-  OKTA_CLIENT_SECRET=
+-  OKTA_ISSUER=
+-
+-  SLACK_CLIENT_ID=
+-  SLACK_CLIENT_SECRET=
+\ No newline at end of file
+diff -Naur quorum-kubernetes/helm/values/genesis-besu.yml quorum-kubernetes/helm/values/genesis-besu.yml
+--- quorum-kubernetes/helm/values/genesis-besu.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/genesis-besu.yml	2023-07-04 18:31:46.000000000 -0300
+@@ -3,25 +3,14 @@
+   removeGenesisOnDelete: true
+ 
+ cluster:
+-  provider: local  # choose from: local | aws | azure
+-  cloudNativeServices: false 
++  provider: aws  # choose from: local | aws
++  cloudNativeServices: true 
+ 
+ aws:
+   # the aws cli commands uses the name 'quorum-node-secrets-sa' so only change this if you altered the name
+   serviceAccountName: quorum-node-secrets-sa
+   # the region you are deploying to
+-  region: ap-southeast-2
+-
+-azure:
+-  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
+-  identityName: quorum-pod-identity
+-  # the clientId of the user assigned managed identity created in the template
+-  identityClientId: azure-clientId
+-  keyvaultName: azure-keyvault
+-  # the tenant ID of the key vault
+-  tenantId: azure-tenantId
+-  # the subscription ID to use - this needs to be set explictly when using multi tenancy
+-  subscriptionId: azure-subscriptionId
++  region: us-east-1
+ 
+ # the raw Genesis config
+ # rawGenesisConfig.blockchain.nodes set the number of validators/signers
+@@ -41,5 +30,6 @@
+   blockchain:
+     nodes:
+       generate: true
++      overwrite: true
+       count: 4
+     accountPassword: 'password'
+diff -Naur quorum-kubernetes/helm/values/genesis-goquorum.yml quorum-kubernetes/helm/values/genesis-goquorum.yml
+--- quorum-kubernetes/helm/values/genesis-goquorum.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/genesis-goquorum.yml	1969-12-31 21:00:00.000000000 -0300
+@@ -1,46 +0,0 @@
+----
+-quorumFlags:
+-  removeGenesisOnDelete: true
+-
+-cluster:
+-  provider: local  # choose from: local | aws | azure
+-  cloudNativeServices: false 
+-  
+-aws:
+-  # the aws cli commands uses the name 'quorum-node-secrets-sa' so only change this if you altered the name
+-  serviceAccountName: quorum-node-secrets-sa
+-  # the region you are deploying to
+-  region: ap-southeast-2
+-
+-azure:
+-  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
+-  identityName: quorum-pod-identity
+-  # the clientId of the user assigned managed identity created in the template
+-  identityClientId: azure-clientId
+-  keyvaultName: azure-keyvault
+-  # the tenant ID of the key vault
+-  tenantId: azure-tenantId
+-  # the subscription ID to use - this needs to be set explictly when using multi tenancy
+-  subscriptionId: azure-subscriptionId
+-
+-# the raw Genesis config
+-# rawGenesisConfig.blockchain.nodes set the number of validators/signers
+-rawGenesisConfig:
+-  genesis:
+-    config:
+-      chainId: 1337
+-      algorithm:
+-        consensus: qbft # choose from: ibft | qbft | raft | clique
+-        blockperiodseconds: 10
+-        emptyBlockPeriod: 60
+-        epochlength: 30000
+-        requesttimeoutseconds: 20
+-    gasLimit: '0x47b760'
+-    difficulty: '0x1'
+-    coinbase: '0x0000000000000000000000000000000000000000'
+-    includeQuickStartAccounts: false # set to true if you would like to use the quorum-dev-quickstart test accounts. This setting will be forced false if cloudNativeServices is set to true which is assuming a prod environment
+-  blockchain:
+-    nodes:
+-      generate: true
+-      count: 4
+-    accountPassword: 'password'
+diff -Naur quorum-kubernetes/helm/values/kibana.yml quorum-kubernetes/helm/values/kibana.yml
+--- quorum-kubernetes/helm/values/kibana.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/kibana.yml	2023-07-04 18:31:46.000000000 -0300
+@@ -126,9 +126,6 @@
+     {}
+     # cloud.google.com/load-balancer-type: "Internal"
+     # service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
+-    # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+-  # service.beta.kubernetes.io/openstack-internal-load-balancer: "true"
+-  # service.beta.kubernetes.io/cce-load-balancer-internal-vpc: "true"
+   loadBalancerSourceRanges:
+     []
+   # 0.0.0.0/0
+diff -Naur quorum-kubernetes/helm/values/monitoring/alerting-besu-nodes.yml quorum-kubernetes/helm/values/monitoring/alerting-besu-nodes.yml
+--- quorum-kubernetes/helm/values/monitoring/alerting-besu-nodes.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/monitoring/alerting-besu-nodes.yml	2023-07-04 18:31:46.000000000 -0300
+@@ -5,7 +5,7 @@
+   labels:
+     app: besu
+   name: besu-alerts
+-  namespace: quorum
++  namespace: besu
+ spec:
+   groups:
+   - name: besu-chain-stalled
+diff -Naur quorum-kubernetes/helm/values/monitoring/grafana-besu-dashboard.yml quorum-kubernetes/helm/values/monitoring/grafana-besu-dashboard.yml
+--- quorum-kubernetes/helm/values/monitoring/grafana-besu-dashboard.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/monitoring/grafana-besu-dashboard.yml	2023-07-04 18:31:46.000000000 -0300
+@@ -2,7 +2,7 @@
+ kind: ConfigMap
+ metadata:
+   name: grafana-besu-dashboard
+-  namespace: quorum
++  namespace: besu
+   labels:
+     grafana_dashboard: "1"
+ data:
+diff -Naur quorum-kubernetes/helm/values/monitoring/grafana-goquorum-dashboard.yml quorum-kubernetes/helm/values/monitoring/grafana-goquorum-dashboard.yml
+--- quorum-kubernetes/helm/values/monitoring/grafana-goquorum-dashboard.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/monitoring/grafana-goquorum-dashboard.yml	1969-12-31 21:00:00.000000000 -0300
+@@ -1,2220 +0,0 @@
+-apiVersion: v1
+-kind: ConfigMap
+-metadata:
+-  name: grafana-goquorum-dashboard
+-  namespace: quorum
+-  labels:
+-    grafana_dashboard: "1"
+-data:
+-    grafana-goquorum-dashboard.json: |-
+-      {
+-        "annotations": {
+-          "list": [
+-            {
+-              "builtIn": 1,
+-              "datasource": "-- Grafana --",
+-              "enable": true,
+-              "hide": true,
+-              "iconColor": "rgba(0, 211, 255, 1)",
+-              "name": "Annotations & Alerts",
+-              "target": {
+-                "limit": 100,
+-                "matchAny": false,
+-                "tags": [],
+-                "type": "dashboard"
+-              },
+-              "type": "dashboard"
+-            }
+-          ]
+-        },
+-        "editable": true,
+-        "fiscalYearStartMonth": 0,
+-        "gnetId": null,
+-        "graphTooltip": 0,
+-        "iteration": 1634095517780,
+-        "links": [],
+-        "liveNow": false,
+-        "panels": [
+-          {
+-            "collapsed": false,
+-            "datasource": null,
+-            "gridPos": {
+-              "h": 1,
+-              "w": 24,
+-              "x": 0,
+-              "y": 0
+-            },
+-            "id": 136,
+-            "panels": [],
+-            "title": "Overview",
+-            "type": "row"
+-          },
+-          {
+-            "datasource": null,
+-            "fieldConfig": {
+-              "defaults": {
+-                "color": {
+-                  "mode": "thresholds"
+-                },
+-                "custom": {
+-                  "align": null,
+-                  "displayMode": "auto",
+-                  "filterable": false
+-                },
+-                "mappings": [],
+-                "thresholds": {
+-                  "mode": "absolute",
+-                  "steps": [
+-                    {
+-                      "color": "green",
+-                      "value": null
+-                    },
+-                    {
+-                      "color": "red",
+-                      "value": 80
+-                    }
+-                  ]
+-                }
+-              },
+-              "overrides": [
+-                {
+-                  "matcher": {
+-                    "id": "byName",
+-                    "options": "Instance"
+-                  },
+-                  "properties": [
+-                    {
+-                      "id": "custom.width",
+-                      "value": 333
+-                    }
+-                  ]
+-                },
+-                {
+-                  "matcher": {
+-                    "id": "byName",
+-                    "options": "Latest Block"
+-                  },
+-                  "properties": [
+-                    {
+-                      "id": "custom.width",
+-                      "value": null
+-                    }
+-                  ]
+-                },
+-                {
+-                  "matcher": {
+-                    "id": "byName",
+-                    "options": "statefulset_kubernetes_io_pod_name"
+-                  },
+-                  "properties": [
+-                    {
+-                      "id": "custom.width",
+-                      "value": 218
+-                    }
+-                  ]
+-                },
+-                {
+-                  "matcher": {
+-                    "id": "byName",
+-                    "options": "kubernetes_pod_name"
+-                  },
+-                  "properties": [
+-                    {
+-                      "id": "custom.width",
+-                      "value": 211
+-                    }
+-                  ]
+-                },
+-                {
+-                  "matcher": {
+-                    "id": "byName",
+-                    "options": "controller_revision_hash"
+-                  },
+-                  "properties": [
+-                    {
+-                      "id": "custom.width",
+-                      "value": 263
+-                    }
+-                  ]
+-                },
+-                {
+-                  "matcher": {
+-                    "id": "byName",
+-                    "options": "app_kubernetes_io_name"
+-                  },
+-                  "properties": [
+-                    {
+-                      "id": "custom.width",
+-                      "value": 214
+-                    }
+-                  ]
+-                },
+-                {
+-                  "matcher": {
+-                    "id": "byName",
+-                    "options": "app"
+-                  },
+-                  "properties": [
+-                    {
+-                      "id": "custom.width",
+-                      "value": 222
+-                    }
+-                  ]
+-                }
+-              ]
+-            },
+-            "gridPos": {
+-              "h": 7,
+-              "w": 24,
+-              "x": 0,
+-              "y": 1
+-            },
+-            "id": 131,
+-            "options": {
+-              "showHeader": true,
+-              "sortBy": [
+-                {
+-                  "desc": true,
+-                  "displayName": "Latest Block"
+-                }
+-              ]
+-            },
+-            "pluginVersion": "8.2.1",
+-            "targets": [
+-              {
+-                "expr": "sum by (instance) (chain_head_block)",
+-                "format": "table",
+-                "instant": true,
+-                "interval": "",
+-                "legendFormat": "",
+-                "refId": "A"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "sum by (instance) (1/rate(chain_head_block[5m]))",
+-                "format": "table",
+-                "hide": false,
+-                "instant": true,
+-                "interval": "",
+-                "legendFormat": "",
+-                "refId": "D"
+-              },
+-              {
+-                "expr": "(p2p_peers)",
+-                "format": "table",
+-                "hide": false,
+-                "instant": true,
+-                "interval": "",
+-                "legendFormat": "",
+-                "refId": "E"
+-              }
+-            ],
+-            "timeFrom": null,
+-            "timeShift": null,
+-            "title": "Overview",
+-            "transformations": [
+-              {
+-                "id": "merge",
+-                "options": {}
+-              },
+-              {
+-                "id": "organize",
+-                "options": {
+-                  "excludeByName": {
+-                    "Time": true,
+-                    "Value #B": true,
+-                    "Value #C": true,
+-                    "__name__": true,
+-                    "app": true,
+-                    "app_kubernetes_io_instance": true,
+-                    "app_kubernetes_io_name": true,
+-                    "component": true,
+-                    "job": true,
+-                    "statefulset_kubernetes_io_pod_name": true
+-                  },
+-                  "indexByName": {
+-                    "Time": 0,
+-                    "Value #A": 2,
+-                    "Value #D": 3,
+-                    "Value #E": 4,
+-                    "__name__": 6,
+-                    "app": 7,
+-                    "app_kubernetes_io_instance": 8,
+-                    "app_kubernetes_io_name": 9,
+-                    "component": 10,
+-                    "controller_revision_hash": 11,
+-                    "instance": 1,
+-                    "job": 12,
+-                    "kubernetes_namespace": 13,
+-                    "kubernetes_pod_name": 14,
+-                    "release": 5,
+-                    "statefulset_kubernetes_io_pod_name": 15
+-                  },
+-                  "renameByName": {
+-                    "Value #A": "Latest Block",
+-                    "Value #B": "",
+-                    "Value #D": "Block Time",
+-                    "Value #E": "Peers",
+-                    "instance": "Instance"
+-                  }
+-                }
+-              }
+-            ],
+-            "type": "table"
+-          },
+-          {
+-            "collapsed": false,
+-            "datasource": "Prometheus",
+-            "gridPos": {
+-              "h": 1,
+-              "w": 24,
+-              "x": 0,
+-              "y": 8
+-            },
+-            "id": 4,
+-            "panels": [],
+-            "title": "Blockchain",
+-            "type": "row"
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "cacheTimeout": null,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 6,
+-              "w": 12,
+-              "x": 0,
+-              "y": 9
+-            },
+-            "hiddenSeries": false,
+-            "id": 110,
+-            "legend": {
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": true,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 2,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "chain_head_block",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "{{instance}}",
+-                "refId": "A"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Latest Block",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "cacheTimeout": null,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 6,
+-              "w": 12,
+-              "x": 12,
+-              "y": 9
+-            },
+-            "hiddenSeries": false,
+-            "id": 132,
+-            "legend": {
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": true,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 2,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "abs(1/rate(chain_head_block[5m]))",
+-                "format": "time_series",
+-                "instant": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "{{instance}}",
+-                "refId": "A"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Block Time",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "s",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": "0",
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "cacheTimeout": null,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 8,
+-              "w": 24,
+-              "x": 0,
+-              "y": 15
+-            },
+-            "hiddenSeries": false,
+-            "id": 112,
+-            "legend": {
+-              "alignAsTable": true,
+-              "avg": false,
+-              "current": true,
+-              "max": true,
+-              "min": true,
+-              "rightSide": true,
+-              "show": true,
+-              "total": false,
+-              "values": true
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 2,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": true,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "exemplar": true,
+-                "expr": "chain_execution{quantile=\"$quantile\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "execution (q=$quantile)",
+-                "refId": "A"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "chain_validation{quantile=\"$quantile\"} ",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "validation (q=$quantile)",
+-                "refId": "B"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "chain_write{quantile=\"$quantile\"}",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "commit (q=$quantile)",
+-                "refId": "C"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "chain_account_reads{quantile=\"$quantile\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "account read (q=$quantile)",
+-                "refId": "D"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "chain_account_updates{quantile=\"$quantile\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "account update (q=$quantile)",
+-                "refId": "E"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "chain_account_hashes{quantile=\"$quantile\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "account hashe (q=$quantile)",
+-                "refId": "F"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "chain_account_commits{quantile=\"$quantile\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "account commit (q=$quantile)",
+-                "refId": "G"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "chain_storage_reads{quantile=\"$quantile\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "storage read (q=$quantile)",
+-                "refId": "H"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "chain_storage_updates{quantile=\"$quantile\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "storage update (q=$quantile)",
+-                "refId": "I"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "chain_storage_hashes{quantile=\"$quantile\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "storage hashe (q=$quantile)",
+-                "refId": "J"
+-              },
+-              {
+-                "exemplar": true,
+-                "expr": "chain_storage_commits{quantile=\"$quantile\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "storage commit (q=$quantile)",
+-                "refId": "K"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Block processing",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "ns",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "cacheTimeout": null,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 7,
+-              "w": 24,
+-              "x": 0,
+-              "y": 23
+-            },
+-            "hiddenSeries": false,
+-            "id": 116,
+-            "legend": {
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": true,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 2,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "txpool_pending",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "executable",
+-                "refId": "A"
+-              },
+-              {
+-                "expr": "txpool_queued",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "gapped",
+-                "refId": "B"
+-              },
+-              {
+-                "expr": "txpool_local{instance=~\"$instance\", job=~\"$job\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "local",
+-                "refId": "C"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Transaction pool",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "cacheTimeout": null,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 7,
+-              "w": 24,
+-              "x": 0,
+-              "y": 30
+-            },
+-            "hiddenSeries": false,
+-            "id": 117,
+-            "legend": {
+-              "alignAsTable": true,
+-              "avg": false,
+-              "current": true,
+-              "max": true,
+-              "min": true,
+-              "rightSide": true,
+-              "show": true,
+-              "total": false,
+-              "values": true
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 2,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "rate(txpool_valid[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "valid",
+-                "refId": "K"
+-              },
+-              {
+-                "expr": "rate(txpool_invalid[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "invalid",
+-                "refId": "A"
+-              },
+-              {
+-                "expr": "rate(txpool_underpriced[1m])",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "underpriced",
+-                "refId": "B"
+-              },
+-              {
+-                "expr": "rate(txpool_pending_discard[1m])",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "executable discard",
+-                "refId": "C"
+-              },
+-              {
+-                "expr": "rate(txpool_pending_replace[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "executable replace",
+-                "refId": "D"
+-              },
+-              {
+-                "expr": "rate(txpool_pending_ratelimit[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "executable ratelimit",
+-                "refId": "E"
+-              },
+-              {
+-                "expr": "rate(txpool_pending_nofunds[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "executable nofunds",
+-                "refId": "F"
+-              },
+-              {
+-                "expr": "rate(txpool_queued_discard[1m])",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "gapped discard",
+-                "refId": "G"
+-              },
+-              {
+-                "expr": "rate(txpool_queued_replace[1m])",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "gapped replace",
+-                "refId": "H"
+-              },
+-              {
+-                "expr": "rate(txpool_queued_ratelimit[1m])",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "gapped ratelimit",
+-                "refId": "I"
+-              },
+-              {
+-                "expr": "rate(txpool_queued_nofunds[1m])",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "gapped nofunds",
+-                "refId": "J"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Transaction propagation",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "none",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "collapsed": false,
+-            "datasource": null,
+-            "gridPos": {
+-              "h": 1,
+-              "w": 24,
+-              "x": 0,
+-              "y": 37
+-            },
+-            "id": 142,
+-            "panels": [],
+-            "title": "DevP2P",
+-            "type": "row"
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": null,
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 6,
+-              "w": 12,
+-              "x": 0,
+-              "y": 38
+-            },
+-            "hiddenSeries": false,
+-            "id": 144,
+-            "legend": {
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": true,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 2,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "(p2p_peers)",
+-                "interval": "",
+-                "legendFormat": "{{instance}}",
+-                "refId": "A"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Peers",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 6,
+-              "w": 12,
+-              "x": 12,
+-              "y": 38
+-            },
+-            "hiddenSeries": false,
+-            "id": 96,
+-            "legend": {
+-              "alignAsTable": true,
+-              "avg": false,
+-              "current": true,
+-              "max": false,
+-              "min": false,
+-              "rightSide": true,
+-              "show": true,
+-              "total": false,
+-              "values": true
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 5,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "rate(p2p_ingress[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "ingress {{instance}}",
+-                "refId": "B"
+-              },
+-              {
+-                "expr": "rate(p2p_egress[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "egress {{instance}}",
+-                "refId": "C"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Network Traffic",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "Bps",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "collapsed": false,
+-            "datasource": "Prometheus",
+-            "gridPos": {
+-              "h": 1,
+-              "w": 24,
+-              "x": 0,
+-              "y": 44
+-            },
+-            "id": 17,
+-            "panels": [],
+-            "title": "Database",
+-            "type": "row"
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 6,
+-              "w": 8,
+-              "x": 0,
+-              "y": 45
+-            },
+-            "hiddenSeries": false,
+-            "id": 35,
+-            "legend": {
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": false,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 5,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "rate(eth_db_chaindata_disk_read[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "leveldb read {{instance}}",
+-                "refId": "B"
+-              },
+-              {
+-                "expr": "rate(eth_db_chaindata_disk_write[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "leveldb write {{instance}}",
+-                "refId": "A"
+-              },
+-              {
+-                "expr": "rate(eth_db_chaindata_ancient_read[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "ancient read {{instance}}",
+-                "refId": "C"
+-              },
+-              {
+-                "expr": "rate(eth_db_chaindata_ancient_write[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "ancient write {{instance}}",
+-                "refId": "D"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Data rate",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "Bps",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 6,
+-              "w": 8,
+-              "x": 8,
+-              "y": 45
+-            },
+-            "hiddenSeries": false,
+-            "id": 118,
+-            "legend": {
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 5,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "eth_db_chaindata_disk_read{instance=~\"$instance\", job=~\"$job\"}",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "leveldb read",
+-                "refId": "B"
+-              },
+-              {
+-                "expr": "eth_db_chaindata_disk_write",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "leveldb write",
+-                "refId": "A"
+-              },
+-              {
+-                "expr": "eth_db_chaindata_ancient_read",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "ancient read",
+-                "refId": "C"
+-              },
+-              {
+-                "expr": "eth_db_chaindata_ancient_write",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "ancient write",
+-                "refId": "D"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Session totals",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "decbytes",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 6,
+-              "w": 8,
+-              "x": 16,
+-              "y": 45
+-            },
+-            "hiddenSeries": false,
+-            "id": 119,
+-            "legend": {
+-              "alignAsTable": false,
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": false,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 5,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "eth_db_chaindata_disk_size",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "leveldb [{{instance}}]",
+-                "refId": "B"
+-              },
+-              {
+-                "expr": "eth_db_chaindata_ancient_size",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "ancient [{{instance}}]",
+-                "refId": "A"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Storage size",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "decbytes",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "collapsed": false,
+-            "datasource": "Prometheus",
+-            "gridPos": {
+-              "h": 1,
+-              "w": 24,
+-              "x": 0,
+-              "y": 51
+-            },
+-            "id": 37,
+-            "panels": [],
+-            "title": "Trie",
+-            "type": "row"
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 6,
+-              "w": 12,
+-              "x": 0,
+-              "y": 52
+-            },
+-            "hiddenSeries": false,
+-            "id": 120,
+-            "legend": {
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": true,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 5,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "rate(trie_memcache_clean_read[1m])",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "hit [{{instance}}]",
+-                "refId": "C"
+-              },
+-              {
+-                "expr": "rate(trie_memcache_clean_write[1m])",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "miss [{{instance}}]",
+-                "refId": "B"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Clean cache",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "Bps",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 6,
+-              "w": 12,
+-              "x": 12,
+-              "y": 52
+-            },
+-            "hiddenSeries": false,
+-            "id": 56,
+-            "legend": {
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": true,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 5,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "rate(trie_memcache_gc_size[1m])",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "gc {{instance}}",
+-                "refId": "C"
+-              },
+-              {
+-                "expr": "rate(trie_memcache_flush_size[1m])",
+-                "format": "time_series",
+-                "hide": false,
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "overflow {{instance}}",
+-                "refId": "B"
+-              },
+-              {
+-                "expr": "rate(trie_memcache_commit_size[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "commit {{instance}}",
+-                "refId": "A"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Dirty cache",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "Bps",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "collapsed": false,
+-            "datasource": "Prometheus",
+-            "gridPos": {
+-              "h": 1,
+-              "w": 24,
+-              "x": 0,
+-              "y": 58
+-            },
+-            "id": 82,
+-            "panels": [],
+-            "title": "System",
+-            "type": "row"
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": null,
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 8,
+-              "w": 8,
+-              "x": 0,
+-              "y": 59
+-            },
+-            "hiddenSeries": false,
+-            "id": 106,
+-            "legend": {
+-              "alignAsTable": false,
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": false,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 5,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "system_cpu_sysload",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "system [{{instance}}]",
+-                "refId": "A"
+-              },
+-              {
+-                "expr": "system_cpu_syswait",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "iowait [{{instance}}]",
+-                "refId": "B"
+-              },
+-              {
+-                "expr": "system_cpu_procload",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "geth [{{instance}}]",
+-                "refId": "C"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "CPU",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "percent",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 8,
+-              "w": 8,
+-              "x": 8,
+-              "y": 59
+-            },
+-            "hiddenSeries": false,
+-            "id": 86,
+-            "legend": {
+-              "alignAsTable": false,
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": false,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 5,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "rate(system_memory_allocs[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "alloc [{{instance}}]",
+-                "refId": "A"
+-              },
+-              {
+-                "expr": "system_memory_used",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "used [{{instance}}]",
+-                "refId": "B"
+-              },
+-              {
+-                "expr": "system_memory_held",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "held [{{instance}}]",
+-                "refId": "C"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Memory",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "bytes",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          },
+-          {
+-            "aliasColors": {},
+-            "bars": false,
+-            "dashLength": 10,
+-            "dashes": false,
+-            "datasource": "Prometheus",
+-            "fill": 1,
+-            "fillGradient": 0,
+-            "gridPos": {
+-              "h": 8,
+-              "w": 8,
+-              "x": 16,
+-              "y": 59
+-            },
+-            "hiddenSeries": false,
+-            "id": 85,
+-            "legend": {
+-              "alignAsTable": false,
+-              "avg": false,
+-              "current": false,
+-              "max": false,
+-              "min": false,
+-              "rightSide": false,
+-              "show": true,
+-              "total": false,
+-              "values": false
+-            },
+-            "lines": true,
+-            "linewidth": 1,
+-            "links": [],
+-            "nullPointMode": "null",
+-            "options": {
+-              "alertThreshold": true
+-            },
+-            "percentage": false,
+-            "pluginVersion": "8.2.1",
+-            "pointradius": 5,
+-            "points": false,
+-            "renderer": "flot",
+-            "seriesOverrides": [],
+-            "spaceLength": 10,
+-            "stack": false,
+-            "steppedLine": false,
+-            "targets": [
+-              {
+-                "expr": "rate(system_disk_readbytes[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "read [{{instance}}]",
+-                "refId": "A"
+-              },
+-              {
+-                "expr": "rate(system_disk_writebytes[1m])",
+-                "format": "time_series",
+-                "interval": "",
+-                "intervalFactor": 1,
+-                "legendFormat": "write [{{instance}}]",
+-                "refId": "B"
+-              }
+-            ],
+-            "thresholds": [],
+-            "timeFrom": null,
+-            "timeRegions": [],
+-            "timeShift": null,
+-            "title": "Disk",
+-            "tooltip": {
+-              "shared": true,
+-              "sort": 0,
+-              "value_type": "individual"
+-            },
+-            "type": "graph",
+-            "xaxis": {
+-              "buckets": null,
+-              "mode": "time",
+-              "name": null,
+-              "show": true,
+-              "values": []
+-            },
+-            "yaxes": [
+-              {
+-                "format": "Bps",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              },
+-              {
+-                "format": "short",
+-                "label": null,
+-                "logBase": 1,
+-                "max": null,
+-                "min": null,
+-                "show": true
+-              }
+-            ],
+-            "yaxis": {
+-              "align": false,
+-              "alignLevel": null
+-            }
+-          }
+-        ],
+-        "refresh": false,
+-        "schemaVersion": 31,
+-        "style": "dark",
+-        "tags": [],
+-        "templating": {
+-          "list": [
+-            {
+-              "current": {
+-                "selected": false,
+-                "text": "default",
+-                "value": "default"
+-              },
+-              "description": null,
+-              "error": null,
+-              "hide": 0,
+-              "includeAll": false,
+-              "label": "datasource",
+-              "multi": false,
+-              "name": "datasource",
+-              "options": [],
+-              "query": "prometheus",
+-              "queryValue": "",
+-              "refresh": 1,
+-              "regex": "",
+-              "skipUrlSync": false,
+-              "type": "datasource"
+-            },
+-            {
+-              "description": null,
+-              "error": null,
+-              "hide": 2,
+-              "label": "job",
+-              "name": "job",
+-              "query": "validator*",
+-              "skipUrlSync": false,
+-              "type": "constant"
+-            },
+-            {
+-              "allValue": null,
+-              "current": {
+-                "selected": false,
+-                "text": "All",
+-                "value": "$__all"
+-              },
+-              "datasource": "Prometheus",
+-              "definition": "label_values(chain_head_block{}, instance)",
+-              "description": null,
+-              "error": null,
+-              "hide": 0,
+-              "includeAll": true,
+-              "label": "instance",
+-              "multi": false,
+-              "name": "instance",
+-              "options": [],
+-              "query": {
+-                "query": "label_values(chain_head_block{}, instance)",
+-                "refId": "StandardVariableQuery"
+-              },
+-              "refresh": 1,
+-              "regex": "",
+-              "skipUrlSync": false,
+-              "sort": 0,
+-              "tagValuesQuery": "",
+-              "tagsQuery": "",
+-              "type": "query",
+-              "useTags": false
+-            },
+-            {
+-              "allValue": null,
+-              "current": {
+-                "selected": true,
+-                "text": "0.5",
+-                "value": "0.5"
+-              },
+-              "description": null,
+-              "error": null,
+-              "hide": 0,
+-              "includeAll": false,
+-              "label": null,
+-              "multi": false,
+-              "name": "quantile",
+-              "options": [
+-                {
+-                  "selected": true,
+-                  "text": "0.5",
+-                  "value": "0.5"
+-                },
+-                {
+-                  "selected": false,
+-                  "text": "0.75",
+-                  "value": "0.75"
+-                },
+-                {
+-                  "selected": false,
+-                  "text": "0.95",
+-                  "value": "0.95"
+-                },
+-                {
+-                  "selected": false,
+-                  "text": "0.99",
+-                  "value": "0.99"
+-                },
+-                {
+-                  "selected": false,
+-                  "text": "0.999",
+-                  "value": "0.999"
+-                },
+-                {
+-                  "selected": false,
+-                  "text": "0.9999",
+-                  "value": "0.9999"
+-                }
+-              ],
+-              "query": "0.5, 0.75, 0.95, 0.99, 0.999, 0.9999",
+-              "queryValue": "",
+-              "skipUrlSync": false,
+-              "type": "custom"
+-            }
+-          ]
+-        },
+-        "time": {
+-          "from": "now-30m",
+-          "to": "now"
+-        },
+-        "timepicker": {
+-          "refresh_intervals": [
+-            "5s",
+-            "10s",
+-            "30s",
+-            "1m",
+-            "5m",
+-            "15m",
+-            "30m",
+-            "1h",
+-            "2h",
+-            "1d"
+-          ],
+-          "time_options": [
+-            "5m",
+-            "15m",
+-            "1h",
+-            "6h",
+-            "12h",
+-            "24h",
+-            "2d",
+-            "7d",
+-            "30d"
+-          ]
+-        },
+-        "timezone": "",
+-        "title": "goQuorum Overview",
+-        "uid": "a1lVy7ycin9Yv",
+-        "version": 1
+-      }        
+\ No newline at end of file
+diff -Naur quorum-kubernetes/helm/values/reader.yml quorum-kubernetes/helm/values/reader.yml
+--- quorum-kubernetes/helm/values/reader.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/reader.yml	2023-07-04 18:31:46.000000000 -0300
+@@ -4,29 +4,18 @@
+   privacy: false
+   removeKeysOnDelete: true
+   isBootnode: false    # Besu only, set this to true if this node is a bootnode
+-  usesBootnodes: false # Besu only, set this to true if the network you are connecting to use a bootnode/s that are deployed in the cluster 
++  usesBootnodes: true # Besu only, set this to true if the network you are connecting to use a bootnode/s that are deployed in the cluster 
+ 
+ cluster:
+-  provider: local  # choose from: local | aws | azure
+-  cloudNativeServices: false 
++  provider: aws  # choose from: local | aws
++  cloudNativeServices: true 
+   reclaimPolicy: Delete # set to either Retain or Delete; note that PVCs and PVs will still exist after a 'helm delete'. Setting to Retain will keep volumes even if PVCs/PVs are deleted in kubernetes. Setting to Delete will remove volumes from EC2 EBS when PVC is deleted
+ 
+ aws:
+   # the aws cli commands uses the name 'quorum-node-secrets-sa' so only change this if you altered the name
+   serviceAccountName: quorum-node-secrets-sa
+   # the region you are deploying to
+-  region: ap-southeast-2
+-
+-azure:
+-  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
+-  identityName: quorum-pod-identity
+-  # the clientId of the user assigned managed identity created in the template
+-  identityClientId: azure-clientId
+-  keyvaultName: azure-keyvault
+-  # the tenant ID of the key vault
+-  tenantId: azure-tenantId
+-  # the subscription ID to use - this needs to be set explictly when using multi tenancy
+-  subscriptionId: azure-subscriptionId
++  region: us-east-1
+ 
+ node:
+   besu:
+@@ -40,15 +29,17 @@
+       memRequest: "1G"
+     account:
+       password: 'password'
+-  goquorum:
+-    metrics:
+-      serviceMonitorEnabled: true
+-    resources:
+-      cpuLimit: 1
+-      cpuRequest: 0.1
+-      memLimit: "2G"
+-      memRequest: "1G"
+-    account:
+-      password: 'password'
++    logging: DEBUG
++    overwrite: true
++  # goquorum:
++  #   metrics:
++  #     serviceMonitorEnabled: true
++  #   resources:
++  #     cpuLimit: 1
++  #     cpuRequest: 0.1
++  #     memLimit: "2G"
++  #     memRequest: "1G"
++  #   account:
++  #     password: 'password'
+   tessera:
+     password: 'password'
+\ No newline at end of file
+diff -Naur quorum-kubernetes/helm/values/txnode.yml quorum-kubernetes/helm/values/txnode.yml
+--- quorum-kubernetes/helm/values/txnode.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/txnode.yml	2023-07-04 18:31:46.000000000 -0300
+@@ -4,29 +4,18 @@
+   privacy: true
+   removeKeysOnDelete: true
+   isBootnode: false    # Besu only, set this to true if this node is a bootnode
+-  usesBootnodes: false # Besu only, set this to true if the network you are connecting to use a bootnode/s that are deployed in the cluster 
++  usesBootnodes: true # Besu only, set this to true if the network you are connecting to use a bootnode/s that are deployed in the cluster 
+ 
+ cluster:
+-  provider: local  # choose from: local | aws | azure
+-  cloudNativeServices: false 
++  provider: aws  # choose from: local | aws
++  cloudNativeServices: true 
+   reclaimPolicy: Delete # set to either Retain or Delete; note that PVCs and PVs will still exist after a 'helm delete'. Setting to Retain will keep volumes even if PVCs/PVs are deleted in kubernetes. Setting to Delete will remove volumes from EC2 EBS when PVC is deleted
+ 
+ aws:
+   # the aws cli commands uses the name 'quorum-node-secrets-sa' so only change this if you altered the name
+   serviceAccountName: quorum-node-secrets-sa
+   # the region you are deploying to
+-  region: ap-southeast-2
+-
+-azure:
+-  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
+-  identityName: quorum-pod-identity
+-  # the clientId of the user assigned managed identity created in the template
+-  identityClientId: azure-clientId
+-  keyvaultName: azure-keyvault
+-  # the tenant ID of the key vault
+-  tenantId: azure-tenantId
+-  # the subscription ID to use - this needs to be set explictly when using multi tenancy
+-  subscriptionId: azure-subscriptionId
++  region: us-east-1
+ 
+ node:
+   besu:
+@@ -40,6 +29,8 @@
+       memRequest: "1G"
+     account:
+       password: 'password'
++    logging: DEBUG
++    overwrite: true
+   goquorum:
+     metrics:
+       serviceMonitorEnabled: true
+@@ -57,4 +48,3 @@
+       memLimit: "2G"
+       memRequest: "1G"
+     password: 'password'
+-    
+\ No newline at end of file
+diff -Naur quorum-kubernetes/helm/values/validator.yml quorum-kubernetes/helm/values/validator.yml
+--- quorum-kubernetes/helm/values/validator.yml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/values/validator.yml	2023-07-04 18:31:46.000000000 -0300
+@@ -2,35 +2,24 @@
+ 
+ quorumFlags:
+   privacy: false
+-  removeKeysOnDelete: false
++  removeKeysOnDelete: true
+   isBootnode: false    # Besu only, set this to true if this node is a bootnode
+-  usesBootnodes: false # Besu only, set this to true if the network you are connecting to use a bootnode/s that are deployed in the cluster 
++  usesBootnodes: true # Besu only, set this to true if the network you are connecting to use a bootnode/s that are deployed in the cluster 
+ 
+ cluster:
+-  provider: local  # choose from: local | aws | azure
+-  cloudNativeServices: false 
++  provider: aws  # choose from: local | aws
++  cloudNativeServices: true 
+   reclaimPolicy: Delete # set to either Retain or Delete; note that PVCs and PVs will still exist after a 'helm delete'. Setting to Retain will keep volumes even if PVCs/PVs are deleted in kubernetes. Setting to Delete will remove volumes from EC2 EBS when PVC is deleted
+ 
+ aws:
+   # the aws cli commands uses the name 'quorum-node-secrets-sa' so only change this if you altered the name
+   serviceAccountName: quorum-node-secrets-sa
+   # the region you are deploying to
+-  region: ap-southeast-2
+-
+-azure:
+-  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
+-  identityName: quorum-pod-identity
+-  # the clientId of the user assigned managed identity created in the template
+-  identityClientId: azure-clientId
+-  keyvaultName: azure-keyvault
+-  # the tenant ID of the key vault
+-  tenantId: azure-tenantId
+-  # the subscription ID to use - this needs to be set explictly when using multi tenancy
+-  subscriptionId: azure-subscriptionId
++  region: us-east-1
+ 
+ node:
+   besu:
+-    envBesuOpts: ""  
++    envBesuOpts: ""
+     metrics:
+       serviceMonitorEnabled: true
+     resources:
+@@ -38,6 +27,8 @@
+       cpuRequest: 0.5
+       memLimit: "2G"
+       memRequest: "1G"
++    logging: DEBUG
++    overwrite: false
+   goquorum:
+     metrics:
+       serviceMonitorEnabled: true

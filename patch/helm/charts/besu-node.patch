@@ -1,0 +1,505 @@
+diff -Naur quorum-kubernetes/helm/charts/besu-node/templates/azure-secret-provider-class.yaml quorum-kubernetes/helm/charts/besu-node/templates/azure-secret-provider-class.yaml
+--- quorum-kubernetes/helm/charts/besu-node/templates/azure-secret-provider-class.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/azure-secret-provider-class.yaml	1969-12-31 21:00:00.000000000 -0300
+@@ -1,51 +0,0 @@
+-{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
+----
+-apiVersion: secrets-store.csi.x-k8s.io/v1alpha1
+-kind: SecretProviderClass
+-metadata:
+-  name: {{ include "besu-node.fullname" . }}-secret-provider
+-  namespace: {{ .Release.Namespace }}
+-spec:
+-  provider: azure
+-  parameters:
+-    usePodIdentity: "true"
+-    useVMManagedIdentity: "false"
+-    userAssignedIdentityID: "{{ .Values.azure.identityClientId }}"
+-    keyvaultName: "{{ .Values.azure.keyvaultName }}"
+-    tenantId: "{{ .Values.azure.tenantId }}"
+-    cloudName: "AzurePublicCloud"
+-    objects:  |
+-      array:
+-        - |
+-          objectName: {{ include "besu-node.fullname" . }}-nodekey
+-          objectAlias: nodekey
+-          objectType: secret
+-          objectVersion: ""
+-        - |
+-          objectName: {{ include "besu-node.fullname" . }}-nodekeypub
+-          objectAlias: nodekey.pub
+-          objectType: secret
+-          objectVersion: ""
+-        - |
+-          objectName: {{ include "besu-node.fullname" . }}-enode
+-          objectAlias: enode
+-          objectType: secret
+-          objectVersion: ""
+-      {{- if .Values.quorumFlags.privacy }}
+-        - |
+-          objectName: {{ include "besu-node.fullname" . }}-tmkey
+-          objectAlias: tm.key
+-          objectType: secret
+-          objectVersion: ""
+-        - |
+-          objectName: {{ include "besu-node.fullname" . }}-tmkeypub
+-          objectAlias: tm.pub
+-          objectType: secret
+-          objectVersion: ""
+-        - |
+-          objectName: {{ include "besu-node.fullname" . }}-tmpassword
+-          objectAlias: tm.password
+-          objectType: secret
+-          objectVersion: ""
+-      {{- end }}
+-{{- end }}
+\ No newline at end of file
+diff -Naur quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml
+--- quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml	2023-07-04 18:31:46.000000000 -0300
+@@ -9,9 +9,6 @@
+     helm.sh/hook-weight: "0"
+     helm.sh/hook-delete-policy: "hook-succeeded"
+   labels:
+-{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
+-    aadpodidbinding: "{{ .Values.azure.identityName }}"
+-{{- end }}
+     app.kubernetes.io/name: pre-delete-hook
+     app.kubernetes.io/component: job
+     app.kubernetes.io/part-of: {{ include "besu-node.fullname" . }}
+@@ -24,9 +21,6 @@
+   template:
+     metadata:
+       labels:
+-{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
+-        aadpodidbinding: "{{ .Values.azure.identityName }}"
+-{{- end}}      
+         app.kubernetes.io/name: pre-delete-hook
+         app.kubernetes.io/instance: {{ .Release.Name }} 
+     spec:
+@@ -45,24 +39,9 @@
+             - -c
+           args:
+             - |
+-
+               echo "{{ template "besu-node.fullname" . }} Pre Delete hook ..."
+ 
+-{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
+-
+-              function deleteSecret {
+-                key=$1
+-                fpath=$2
+-                az keyvault secret show --vault-name {{ .Values.azure.keyvaultName }} --name $key > /dev/null 2>&1
+-                if [ $? -eq 0 ]; then
+-                  az keyvault secret delete --vault-name {{ .Values.azure.keyvaultName }} --name $key
+-                fi
+-              }
+-
+-              az login --identity --debug
+-              az account set --subscription {{ .Values.azure.subscriptionId }}
+-
+-{{- else if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
++{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
+ 
+               function deleteSecret {
+                 key=$1
+@@ -71,14 +50,12 @@
+                   aws secretsmanager delete-secret --secret-id $key --recovery-window-in-days 7
+                 fi
+               }
+-
+ {{- else }}
+ 
+               function deleteSecret {
+                 key=$1
+                 kubectl delete secret ${key} --namespace {{ .Release.Namespace }} 
+               }
+-
+ {{- end }}
+ 
+               function delete_node_from_tessera_peers_configmap {
+@@ -144,15 +121,15 @@
+               deleteSecret {{ template "besu-node.fullname" . }}-accountKeystore
+               deleteSecret {{ template "besu-node.fullname" . }}-accountAddress
+               deleteSecret {{ template "besu-node.fullname" . }}-address
+-
+ {{- if .Values.quorumFlags.privacy }}
++
+               deleteSecret {{ template "besu-node.fullname" . }}-tmkey
+               deleteSecret {{ template "besu-node.fullname" . }}-tmkeypub
+               deleteSecret {{ template "besu-node.fullname" . }}-tmpassword
+ {{- end }}
+ 
+ {{- else }}
+-                  
++
+               deleteSecret {{ template "besu-node.fullname" . }}-keys
+               deleteSecret {{ template "besu-node.fullname" . }}-account
+ {{- if .Values.quorumFlags.privacy }}
+@@ -161,7 +138,6 @@
+ 
+ {{- end }}
+ 
+-{{- end }}       
++{{- end }}
+ 
+               echo "Completed"
+-
+diff -Naur quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-install.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-install.yaml
+--- quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-install.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-install.yaml	2023-07-04 18:31:46.000000000 -0300
+@@ -9,9 +9,6 @@
+     "helm.sh/hook-weight": "0"
+     "helm.sh/hook-delete-policy": "hook-succeeded"
+   labels:
+-{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
+-    aadpodidbinding: "{{ .Values.azure.identityName }}"
+-{{- end }}
+     app.kubernetes.io/name: pre-install-hook
+     app.kubernetes.io/component: job
+     app.kubernetes.io/part-of: {{ include "besu-node.fullname" . }}
+@@ -24,9 +21,6 @@
+   template:
+     metadata:
+       labels:  
+-{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
+-        aadpodidbinding: "{{ .Values.azure.identityName }}"
+-{{- end }}
+         app.kubernetes.io/name: pre-install-hook
+         app.kubernetes.io/instance: {{ .Release.Name }} 
+     spec:
+@@ -89,7 +83,7 @@
+                   echo "[]" > /tmp/besu-bootnodes-json.raw
+                   kubectl -n {{ .Release.Namespace }} create configmap besu-bootnodes --from-file=bootnodes-json=/tmp/besu-bootnodes-json.raw --from-literal=bootnodes-string=""
+                 fi
+-                
++
+                 echo "updating besu-bootnodes..."
+                 echo $(kubectl -n {{ .Release.Namespace }} get configmap besu-bootnodes -o jsonpath='{.data.bootnodes-json}' ) > /tmp/besu-bootnodes-json.raw
+                 pubkey=$(cat $PUBKEY_LOC )
+@@ -100,32 +94,23 @@
+               }
+ 
+ 
+-{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
+-              function safeWriteSecret {
+-                key=$1
+-                fpath=$2
+-                az keyvault secret show --vault-name {{ .Values.azure.keyvaultName }} --name $key > /dev/null 2>&1
+-                if [ $? -ne 0 ]; then
+-                  az keyvault secret set --vault-name {{ .Values.azure.keyvaultName }} --name $key --file $fpath --encoding utf-8
+-                else
+-                  # if the key exists pull it from keyvault so that when you update the enodes configmap, you have the right value
+-                  az keyvault secret show --vault-name {{ .Values.azure.keyvaultName }} --name $key | jq -r '.value' > $fpath
+-                fi
+-              }
+-
+-              az login --identity --debug
+-              az account set --subscription {{ .Values.azure.subscriptionId }}
++{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
+ 
+-{{- else if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
+               function safeWriteSecret {
+                 key=$1
+                 fpath=$2
++                overwrite=$3
+                 aws secretsmanager describe-secret --secret-id $key > /dev/null 2>&1
+                 if [ $? -ne 0 ]; then
+                   aws secretsmanager create-secret --name $key --description $key --secret-string file://$fpath
+                 else
+-                  # if the key exists pull it from keyvault so that when you update the enodes configmap, you have the right value
+-                  aws secretsmanager get-secret-value --secret-id $key | jq -r '.SecretString' > $fpath
++                  if [ "$overwrite" = "true" ]; then
++                    echo "Updating $key" in Vault
++                    aws secretsmanager update-secret --secret-id $key --secret-string file://$fpath
++                  else
++                    # if the key exists pull it from keyvault so that when you update the enodes configmap, you have the right value
++                    aws secretsmanager get-secret-value --secret-id $key | jq -r '.SecretString' > $fpath
++                  fi
+                 fi
+               }
+ {{- else }}
+@@ -153,16 +138,16 @@
+               FOLDER_PATH=$(quorum-genesis-tool --validators 0 --members 1 --bootnodes 0 {{ if .Values.node.besu.account.password }} --accountPassword {{ .Values.node.besu.account.password }} {{ end }} --outputPath /generated-config | tail -1 | sed -e "s/^Artifacts in folder: //")
+               echo "Creating {{ template "besu-node.fullname" . }} secrets in k8s ..."
+               
+-{{- if .Values.cluster.cloudNativeServices }}
++{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
+               echo "Creating keys in vault for {{ template "besu-node.fullname" . }} ..."
+-              safeWriteSecret {{ template "besu-node.fullname" . }}-nodekey $FOLDER_PATH/member0/nodekey
+-              safeWriteSecret {{ template "besu-node.fullname" . }}-nodekeypub $FOLDER_PATH/member0/nodekey.pub
+-              safeWriteSecret {{ template "besu-node.fullname" . }}-enode $FOLDER_PATH/member0/nodekey.pub
+-              safeWriteSecret {{ template "besu-node.fullname" . }}-address $FOLDER_PATH/member0/address
+-              safeWriteSecret {{ template "besu-node.fullname" . }}-accountPrivateKey $FOLDER_PATH/member0/accountPrivateKey
+-              safeWriteSecret {{ template "besu-node.fullname" . }}-accountPassword $FOLDER_PATH/member0/accountPassword 
+-              safeWriteSecret {{ template "besu-node.fullname" . }}-accountKeystore $FOLDER_PATH/member0/accountKeystore 
+-              safeWriteSecret {{ template "besu-node.fullname" . }}-accountAddress $FOLDER_PATH/member0/accountAddress 
++              safeWriteSecret {{ template "besu-node.fullname" . }}-nodekey $FOLDER_PATH/member0/nodekey {{ .Values.node.besu.overwrite }}
++              safeWriteSecret {{ template "besu-node.fullname" . }}-nodekeypub $FOLDER_PATH/member0/nodekey.pub {{ .Values.node.besu.overwrite }}
++              safeWriteSecret {{ template "besu-node.fullname" . }}-enode $FOLDER_PATH/member0/nodekey.pub {{ .Values.node.besu.overwrite }}
++              safeWriteSecret {{ template "besu-node.fullname" . }}-address $FOLDER_PATH/member0/address {{ .Values.node.besu.overwrite }}
++              safeWriteSecret {{ template "besu-node.fullname" . }}-accountPrivateKey $FOLDER_PATH/member0/accountPrivateKey {{ .Values.node.besu.overwrite }}
++              safeWriteSecret {{ template "besu-node.fullname" . }}-accountPassword $FOLDER_PATH/member0/accountPassword {{ .Values.node.besu.overwrite }}
++              safeWriteSecret {{ template "besu-node.fullname" . }}-accountKeystore $FOLDER_PATH/member0/accountKeystore {{ .Values.node.besu.overwrite }}
++              safeWriteSecret {{ template "besu-node.fullname" . }}-accountAddress $FOLDER_PATH/member0/accountAddress {{ .Values.node.besu.overwrite }}
+ {{- else }}
+               safeWriteSecret {{ template "besu-node.fullname" . }} $FOLDER_PATH/member0
+ {{- end }}
+@@ -182,7 +167,7 @@
+                 echo "" > $FOLDER_PATH/member0/passwordFile.txt
+               fi
+               echo "Creating {{ template "besu-node.fullname" . }}-tessera-keys secrets in k8s ..."
+-{{- if .Values.cluster.cloudNativeServices }}
++{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
+               safeWriteSecret {{ template "besu-node.fullname" . }}-tmkey $FOLDER_PATH/member0/tessera.key
+               safeWriteSecret {{ template "besu-node.fullname" . }}-tmkeypub $FOLDER_PATH/member0/tessera.pub
+               safeWriteSecret {{ template "besu-node.fullname" . }}-tmpassword $FOLDER_PATH/member0/passwordFile.txt
+diff -Naur quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-service-account.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-service-account.yaml
+--- quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-service-account.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-service-account.yaml	2023-07-04 18:31:46.000000000 -0300
+@@ -6,7 +6,7 @@
+   namespace: {{ .Release.Namespace }}
+   annotations:
+     "helm.sh/hook-delete-policy": before-hook-creation
+-    "helm.sh/hook": "pre-install,pre-delete,post-delete"  
++    "helm.sh/hook": "pre-install,pre-delete,post-delete"
+ 
+ ---
+ apiVersion: rbac.authorization.k8s.io/v1
+@@ -16,7 +16,7 @@
+   namespace: {{ .Release.Namespace }}
+   annotations:
+     "helm.sh/hook-delete-policy": before-hook-creation
+-    "helm.sh/hook": "pre-install,pre-delete,post-delete"    
++    "helm.sh/hook": "pre-install,pre-delete,post-delete"
+ rules:
+   - apiGroups: [""]
+     resources: ["secrets", "configmaps"]
+@@ -33,7 +33,7 @@
+   namespace: {{ .Release.Namespace }}
+   annotations:
+     "helm.sh/hook-delete-policy": before-hook-creation
+-    "helm.sh/hook": "pre-install,pre-delete,post-delete"    
++    "helm.sh/hook": "pre-install,pre-delete,post-delete"
+ roleRef:
+   apiGroup: rbac.authorization.k8s.io
+   kind: Role
+@@ -46,5 +46,3 @@
+ {{- else }}
+   name: {{ include "besu-node.fullname" . }}-hooks-sa
+ {{- end}}
+-
+-
+diff -Naur quorum-kubernetes/helm/charts/besu-node/templates/node-service-account.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-service-account.yaml
+--- quorum-kubernetes/helm/charts/besu-node/templates/node-service-account.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-service-account.yaml	2023-07-04 18:31:46.000000000 -0300
+@@ -32,9 +32,7 @@
+ subjects:
+ - kind: ServiceAccount
+   namespace: {{ .Release.Namespace }}
+-{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
+-  name: {{ include "besu-node.fullname" . }}-sa
+-{{- else if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
++{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
+   name: {{ .Values.aws.serviceAccountName }}
+ {{- else }}
+   name: {{ include "besu-node.fullname" . }}-sa
+diff -Naur quorum-kubernetes/helm/charts/besu-node/templates/node-service.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-service.yaml
+--- quorum-kubernetes/helm/charts/besu-node/templates/node-service.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-service.yaml	2023-07-04 18:31:46.000000000 -0300
+@@ -43,7 +43,7 @@
+       targetPort: metrics
+       protocol: TCP
+       
+-{{- if .Values.quorumFlags.privacy }}          
++{{- if .Values.quorumFlags.privacy }}
+     - name: tessera
+       port: {{ .Values.node.tessera.port }}
+       targetPort: tessera
+@@ -58,7 +58,6 @@
+       protocol: TCP
+ {{- end }}
+ 
+-
+ {{- if and .Values.node.besu.metrics.enabled .Values.node.besu.metrics.serviceMonitorEnabled }}
+ ---
+ apiVersion: monitoring.coreos.com/v1
+@@ -84,13 +83,12 @@
+     - {{ .Release.Namespace }}
+   selector:
+     matchLabels:
+-      app.kubernetes.io/name: {{ include "besu-node.fullname" . }}
+-      app.kubernetes.io/instance: {{ .Release.Name }}
+-      app.kubernetes.io/component: {{ .Release.Name }}
++      app.kubernetes.io/part-of: {{ include "besu-node.fullname" . }}
++      app.kubernetes.io/component: service
+   endpoints:
+   - port: metrics
+     interval: 15s
+     path: /metrics
+     scheme: http
+     honorLabels: true
+-{{- end }}
+\ No newline at end of file
++{{- end }}
+diff -Naur quorum-kubernetes/helm/charts/besu-node/templates/node-statefulset.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-statefulset.yaml
+--- quorum-kubernetes/helm/charts/besu-node/templates/node-statefulset.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-statefulset.yaml	2023-07-04 18:31:46.000000000 -0300
+@@ -4,9 +4,6 @@
+ metadata:
+   name: {{ template "besu-node.fullname" . }}
+   labels:
+-{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
+-    aadpodidbinding: "{{ .Values.azure.identityName }}"
+-{{- end }}
+     app.kubernetes.io/name: besu-statefulset
+     app.kubernetes.io/component: besu
+     app.kubernetes.io/part-of: {{ include "besu-node.fullname" . }}
+@@ -43,9 +40,6 @@
+   template:
+     metadata:
+       labels:
+-{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}        
+-        aadpodidbinding: "{{ .Values.azure.identityName }}"
+-{{- end }}
+         app.kubernetes.io/name: besu-statefulset
+         app.kubernetes.io/component: besu
+         app.kubernetes.io/part-of: {{ include "besu-node.fullname" . }}
+@@ -187,10 +181,8 @@
+ 
+                 cat {{ .Values.node.tessera.dataPath }}/tessera-config-09.json
+                 /tessera/bin/tessera -configfile {{ .Values.node.tessera.dataPath }}/tessera-config-09.json
+-
+ {{- end }}
+ 
+-
+       - name: {{ .Release.Name }}-besu
+         image: {{ .Values.image.besu.repository }}:{{ .Values.image.besu.tag }}
+         imagePullPolicy: {{ .Values.image.besu.pullPolicy }}
+@@ -213,7 +205,7 @@
+ {{- if .Values.node.besu.envBesuOpts }}
+           - name: BESU_OPTS
+             value: "{{ .Values.node.besu.envBesuOpts }}"
+-{{- end }}    
++{{- end }}
+ {{- if .Values.quorumFlags.usesBootnodes }}
+           - name: BESU_BOOTNODES
+             valueFrom:
+@@ -234,7 +226,7 @@
+           - name: tessera-keys
+             mountPath: {{ .Values.node.besu.privacy.pubkeysPath }}
+             readOnly: true
+-{{- end }}            
++{{- end }}
+ {{- end }}
+           - name: genesis
+             mountPath: /etc/genesis
+diff -Naur quorum-kubernetes/helm/charts/besu-node/templates/node-storage.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-storage.yaml
+--- quorum-kubernetes/helm/charts/besu-node/templates/node-storage.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-storage.yaml	2023-07-04 18:31:46.000000000 -0300
+@@ -1,23 +1,4 @@
+-{{- if eq .Values.cluster.provider "azure" }}
+----
+-apiVersion: storage.k8s.io/v1
+-kind: StorageClass
+-metadata:
+-  name: {{ include "besu-node.fullname" . }}-storage
+-  namespace: {{ .Release.Namespace }}
+-provisioner: kubernetes.io/azure-file
+-reclaimPolicy: {{ .Values.cluster.reclaimPolicy }}
+-allowVolumeExpansion: true
+-mountOptions:
+-  - dir_mode=0755
+-  - file_mode=0755
+-  - uid=1000
+-  - gid=1000
+-  - mfsymlinks
+-parameters:
+-  skuName: Standard_LRS
+-
+-{{- else if eq .Values.cluster.provider "aws" }}
++{{- if eq .Values.cluster.provider "aws" }}
+ ---
+ apiVersion: storage.k8s.io/v1
+ kind: StorageClass
+@@ -46,7 +27,6 @@
+ #   gidRangeStart: "1000" # optional
+ #   gidRangeEnd: "2000" # optional
+ #   basePath: "/dynamic_provisioning" # optional
+-
+ {{- else }}
+ 
+ ---
+@@ -68,4 +48,3 @@
+     path: "/tmp/{{ include "besu-node.fullname" . }}"
+ 
+ {{- end }}
+-
+diff -Naur quorum-kubernetes/helm/charts/besu-node/templates/permissions-configmap.yaml quorum-kubernetes/helm/charts/besu-node/templates/permissions-configmap.yaml
+--- quorum-kubernetes/helm/charts/besu-node/templates/permissions-configmap.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/permissions-configmap.yaml	2023-07-04 18:31:46.000000000 -0300
+@@ -16,5 +16,4 @@
+ 
+     accounts-allowlist={{ .Values.node.besu.permissions.accounts.allowlist }}
+     nodes-allowlist={{ .Values.node.besu.permissions.nodes.allowlist }}
+-
+ {{- end -}}
+\ No newline at end of file
+diff -Naur quorum-kubernetes/helm/charts/besu-node/values.yaml quorum-kubernetes/helm/charts/besu-node/values.yaml
+--- quorum-kubernetes/helm/charts/besu-node/values.yaml	2023-07-04 22:33:08.000000000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/values.yaml	2023-07-04 18:31:46.000000000 -0300
+@@ -8,26 +8,15 @@
+   usesBootnodes: true # set this to true if the network you are connecting to use a bootnode/s that are deployed in the cluster 
+ 
+ cluster:
+-  provider: local  # choose from: local | aws | azure
+-  cloudNativeServices: false # set to true to use Cloud Native Services (SecretsManager and IAM for AWS; KeyVault & Managed Identities for Azure)
++  provider: aws  # choose from: local | aws
++  cloudNativeServices: true # set to true to use Cloud Native Services (SecretsManager and IAM for AWS)
+   reclaimPolicy: Delete # set to either Retain or Delete
+ 
+ aws:
+   # the aws cli commands uses the name 'quorum-node-secrets-sa' so only change this if you altered the name
+   serviceAccountName: quorum-node-secrets-sa
+   # the region you are deploying to
+-  region: ap-southeast-2
+-
+-azure:
+-  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
+-  identityName: quorum-pod-identity
+-  # the clientId of the user assigned managed identity created in the template
+-  identityClientId: azure-clientId
+-  keyvaultName: azure-keyvault
+-  # the tenant ID of the key vault
+-  tenantId: azure-tenantId
+-  # the subscription ID to use - this needs to be set explictly when using multi tenancy
+-  subscriptionId: azure-subscriptionId
++  region: us-east-1
+ 
+ storage:
+   sizeLimit: "20Gi"
+@@ -60,6 +49,7 @@
+     privateKeyPath: "/keys/nodekey"
+     genesisFilePath: "/etc/genesis/genesis.json"
+     logging: INFO
++    overwrite: false
+     customLabels: {}
+     account:
+       password: 'password'
+@@ -148,7 +138,7 @@
+ image:
+   besu:
+     repository: hyperledger/besu
+-    tag: 22.7.2
++    tag: 23.4.4
+     pullPolicy: IfNotPresent
+   tessera:
+     repository: quorumengineering/tessera
+@@ -156,6 +146,6 @@
+     pullPolicy: IfNotPresent
+   hooks:
+     repository: consensys/quorum-k8s-hooks
+-    tag: qgt-0.2.3
++    tag: qgt-0.2.6
+     pullPolicy: IfNotPresent
+ 
