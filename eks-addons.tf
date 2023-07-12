@@ -210,11 +210,6 @@ module "eks_blueprints_addons" {
 }
 
 resource "aws_ec2_tag" "karpenter_tag_cluster_primary_security_group" {
-
-  # This should not affect the name of the cluster primary security group
-  # Ref: https://github.com/terraform-aws-modules/terraform-aws-eks/pull/2006
-  # Ref: https://github.com/terraform-aws-modules/terraform-aws-eks/pull/2008
-  #for_each = var.create_additional_tags_for_cluster_security_group ? : { for k, v in merge(var.tags, var.cluster_tags) : k => v if local.create && k != "Name" } : {}
   resource_id = module.eks.cluster_primary_security_group_id
   key         = "karpenter.sh/discovery"
   value       = local.name

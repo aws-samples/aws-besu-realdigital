@@ -14,7 +14,6 @@ module "eks" {
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
-  #Maybe set create_cluster_security_group to FALSE because we're using THAT SECURITY GROUP (USING THE DEFAULT CREATED BY EKS)
 
   create_cluster_security_group = false
   create_node_security_group    = false
@@ -64,26 +63,5 @@ module "eks" {
       ]
     }
   }
-
-  # fargate_profiles = {
-  #   fargate = {
-  #     iam_role_name            = "${local.name}-fargate" # Backwards compat
-  #     iam_role_use_name_prefix = false                   # Backwards compat
-
-  #     selectors = [{
-  #       #namespace = "karpenter"
-  #       labels = {
-  #         Which = "fargate"
-  #       }
-  #     }]
-  #   }
-  # }
-
-  # tags = merge(local.tags, {
-  #   # NOTE - if creating multiple security groups with this module, only tag the
-  #   # security group that Karpenter should utilize with the following tag
-  #   # (i.e. - at most, only one security group should have this tag in your account)
-  #   "karpenter.sh/discovery" = local.name
-  # })
   tags = local.tags
 }

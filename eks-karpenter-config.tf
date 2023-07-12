@@ -61,15 +61,3 @@ resource "kubectl_manifest" "karpenter_node_template" {
   YAML
   depends_on = [module.eks_blueprints_addons]
 }
-
-# resource "null_resource" "sleep_before_destroy" {
-#   depends_on = [module.eks_blueprints_addons]
-#   triggers = {
-#     # Add any relevant triggers here
-#   }
-
-#   provisioner "local-exec" {
-#     command = "sleep 30" # Sleep for 5 minutes (300 seconds)
-#     when    = destroy
-#   }
-# }

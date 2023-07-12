@@ -21,10 +21,6 @@ module "vpc" {
   # Manage so we can name
   manage_default_network_acl = true
   default_network_acl_tags   = { Name = "${local.name}-default" }
-  # manage_default_route_table    = false
-  # default_route_table_tags      = { Name = "${local.name}-default" }
-  # manage_default_security_group = false
-  # default_security_group_tags   = { Name = "${local.name}-default" }  
 
   public_subnet_tags = {
     "kubernetes.io/cluster/${local.name}" = "shared"
