@@ -56,15 +56,13 @@ aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME
 Monitoring Ingress controller LoadBalancer
 ```bash
 ELB=$(kubectl get -n besu service quorum-monitoring-ingress-ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].hostname')
-echo "http://${ELB}"
+echo "Grafana URL - http://${ELB}"
+echo "Kibana URL - http://${ELB}/kibana"
+echo "Explorer URL - http://${ELB}/explorer"
 ```
 
-- Grafana URL http://${ELB}/
-- Kibana URL http://${ELB}/kibana
+Grafana default credentials:
   - Username: admin, password: password
-- Explorer URL http://${ELB}/explorer
-- BlockScout URL http://${ELB}/blockscout
-
 
 Configuring Index Pattern in Kibana
 ```bash
@@ -83,7 +81,7 @@ kubectl port-forward service/monitoring-kube-prometheus-prometheus 8080:9090 -n 
 open browser http://localhost:8080
 ```
 
-### Testing Cluster Besu
+## Testing Cluster Besu
 
 ```bash
 curl -v -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' "http://${ELB}/rpc"
