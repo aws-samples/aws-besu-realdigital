@@ -9,16 +9,7 @@ class RealDigitalBesuEc2Stack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
-        # vpc_cidr = CfnParameter(self, "vpcCdr", type="String",
-        #     description="The VPC CIDR address.")
 
-        # besu_cluster_cidr = CfnParameter(self, "besuCdr", type="String",
-        #     description="The CIDR of the cluster Besu where you will connect")
-
-        # instance_type = CfnParameter(self, "instanceType", type="String",
-        #     description="Instance Type. Default: m5.xlarge",
-        #     default="m5.xlarge"
-        # )
         # VPC # 
         vpc = ec2.Vpc(self, "Vpc",
             ip_addresses=ec2.IpAddresses.cidr(self.node.try_get_context('VpcCIDR'))
