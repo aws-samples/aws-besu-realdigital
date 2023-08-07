@@ -15,6 +15,11 @@
     ]
   },
   "context": {
+    "VpcCIDR": "176.16.10.10/16",
+    "BesuCIDR": "192.168.10.11/32", 
+    "InstanceType" : "m5.xlarge",
+    "BootNodes": "enode://c35c3ec90a8a51fd5703594c6303382f36e9925cbbefb0b28b79295d615f@127.0.0.1:30303",
+    
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [
