@@ -8,26 +8,26 @@ This repo intends to support the creation of a single node Besu Hyperledger runn
 
 ### 1. Configure Python and download CDK. 
 ```
-$ python3 -m venv .venv
+python3 -m venv .venv
 ```
 
 After the init process completes and the virtualenv is created, you can use the following
 step to activate your virtualenv.
 
 ```
-$ source .venv/bin/activate
+source .venv/bin/activate
 ```
 
 If you are a Windows platform, you would activate the virtualenv like this:
 
 ```
-% .venv\Scripts\activate.bat
+.venv\Scripts\activate.bat
 ```
 
 Once the virtualenv is activated, you can install the required dependencies.
 
 ```
-$ pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ## 1.1 Parameters
@@ -50,7 +50,7 @@ To understand what bootnodes means and to get the BACEN address, check [this lin
 At this point you can now synthesize the CloudFormation template for this code.
 
 ```
-$ cdk synth -c "VpcCIDR=10.0.0.0/16" -c "BesuCIDR=192.168.10.10/32" -c "InstanceType=c5.large" -c "BootNodes=enode://c35c3ec90a8a51fd5703594c6303382f3ae6b2ecb99bab2c04b3794f2bc3fc2631dabb0c08af795787a6c004d8f532230ae6e9925cbbefb0b28b79295d615f@127.0.0.1:30303"
+cdk synth -c "VpcCIDR=10.0.0.0/16" -c "BesuCIDR=192.168.10.10/32" -c "InstanceType=c5.large" -c "BootNodes=enode://c35c3ec90a8a51fd5703594c6303382f3ae6b2ecb99bab2c04b3794f2bc3fc2631dabb0c08af795787a6c004d8f532230ae6e9925cbbefb0b28b79295d615f@127.0.0.1:30303"
 ```
 
 *this address and bootnodes are just examples*
@@ -107,3 +107,12 @@ genesis-file="/caminho/para/o/arquivo/genesis.json"
 to the correctly path. 
 
 Enjoy!
+
+### 6. Clean Up
+
+To delete the Besu Single Node, run: 
+
+`cdk destroy`
+
+And all the resources will be deleted. 
+
