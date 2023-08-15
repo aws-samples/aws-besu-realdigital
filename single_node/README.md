@@ -6,6 +6,13 @@ This repo intends to support the creation of a single node Besu Hyperledger runn
 
 ## How to Install 
 
+### 0. Pre-reqs
+
+- Python 3.7++
+- CDK v2 
+- AWS Cli >= 2.3.1
+
+
 ### 1. Configure Python and download CDK. 
 ```
 python3 -m venv .venv
