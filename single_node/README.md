@@ -102,18 +102,6 @@ To check the block sync:
 
 `curl -X POST --data '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' localhost:8545`
 
-### 5.2 Troubleshooting
-
-If you are getting the error: 
-`bash[2901]: Unable to load genesis file. java.io.FileNotFoundException: /caminho/para/o/arquivo/genesis.json (No such file or directory)` 
-
-Its because you should edit the config.toml downloaded from Bacen, and change the lines
-
-data-path="/caminho/para/a/pasta/data"
-genesis-file="/caminho/para/o/arquivo/genesis.json"
-
-to the correctly path. 
-
 Enjoy!
 
 ## 6. Clean Up
