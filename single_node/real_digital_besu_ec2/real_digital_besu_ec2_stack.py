@@ -43,6 +43,7 @@ class RealDigitalBesuEc2Stack(Stack):
         )
         
         # EC2 Instance #
+        
         instance = ec2.Instance(
             self
             , "Instance"
@@ -51,10 +52,22 @@ class RealDigitalBesuEc2Stack(Stack):
                 generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2
             )
             , vpc=vpc
+            # To launch the EC2 into a public subnet, uncomment the 2 lines below: 
+            #, vpc_subnets=ec2.SubnetSelection(
+            #                    subnet_type=ec2.SubnetType.PUBLIC)
             , role=role
-            , security_group =sec_grp
+            , security_group=sec_grp
         )
-        
+
+        instance.instance.add_property_override("BlockDeviceMappings", [{
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+                "VolumeSize": "100",
+                "VolumeType": "gp3",
+                "DeleteOnTermination": "true"
+            }
+        },
+        ])
         BootNodeAddress = self.node.try_get_context('BootNodes')
         commands = '''
 #!/bin/bash
@@ -77,7 +90,6 @@ cd /usr/lib/besu
 touch besu.log
 mkdir -p /data/besu
 mkdir -p /etc/genesis
-touch /etc/genesis/genesis.json
 
 wget https://hyperledger.jfrog.io/hyperledger/besu-binaries/besu/23.4.1/besu-23.4.1.tar.gz / sha256: 49d3a7a069cae307497093d834f873ce7804a46dd59207d5e8321459532d318e
 
@@ -88,9 +100,12 @@ cd besu-23.4.1/
 bin/besu --help
 
 echo "## DOWNLOAD CONFIG FILES"
-cd /usr/lib/besu/besu-23.4.1
-wget https://raw.githubusercontent.com/bacen/pilotord-kit-onboarding/main/genesis.json
-wget https://raw.githubusercontent.com/bacen/pilotord-kit-onboarding/main/config.toml
+wget https://raw.githubusercontent.com/bacen/pilotord-kit-onboarding/main/genesis.json -P /etc/genesis
+wget https://raw.githubusercontent.com/bacen/pilotord-kit-onboarding/main/config.toml -P /usr/lib/besu/besu-23.4.1
+
+echo "## EDITING CONFIG"
+
+sed -i 's;"/caminho/para/o/arquivo/genesis.json";"/etc/genesis/genesis.json";g' /usr/lib/besu/besu-23.4.1/config.toml
 
 echo "## CONFIG BESU ON INIT ##"
 
