@@ -6,7 +6,7 @@ This sample repository aims to help AWS customers reduce the initial setup time 
 
 This repository is divide into two main sections:
 
-1. [Hyperledge Besu Cluster Setup](./cluster_besu/README.md)
+1. [Hyperledge Besu Cluster Setup](./cluster-besu/README.md)
 1. [Hyperledge Besu Single Node](./single_node/README.md)
 
 This repository is also part of the recently written AWS blog [Real Digital e a utilização de Hyperledger Besu na AWS](https://aws.amazon.com/pt/blogs/aws-brasil/real-digital-e-a-utilizacao-de-hyperledger-besu-na-aws/) (PT-BR).

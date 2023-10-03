@@ -23,7 +23,7 @@ Deploy Hyperledge Besu cluster using Hashicorp Terraform (IaC) and some AWS Serv
 
 ```bash
 git clone https://github.com/aws-samples/aws-besu-realdigital.git
-cd aws-besu-realdigital/cluster_besu
+cd aws-besu-realdigital/cluster-besu
 
 git clone https://github.com/Consensys/quorum-kubernetes.git quorum-kubernetes
 cd quorum-kubernetes
