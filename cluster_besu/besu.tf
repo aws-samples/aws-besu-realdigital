@@ -116,6 +116,7 @@ resource "helm_release" "ingress-nginx" {
   name       = "quorum-monitoring-ingress"
   repository = "https://kubernetes.github.io/ingress-nginx"
   chart      = "ingress-nginx"
+  version    = "4.7.1"
   namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
   wait       = "true"
   set {
