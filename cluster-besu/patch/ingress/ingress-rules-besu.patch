@@ -1,0 +1,78 @@
+--- quorum-kubernetes-consensys/ingress/ingress-rules-besu.yml	2023-10-03 21:04:18
++++ quorum-kubernetes/ingress/ingress-rules-besu.yml	2023-10-03 21:56:39
+@@ -1,32 +1,21 @@
+ ---
+-# ingress-nginx IngressClass
+ apiVersion: networking.k8s.io/v1
+-kind: IngressClass
+-metadata:
+-  name: network-nginx
+-  namespace: quorum
+-spec:
+-  controller: k8s.io/network-ingress-nginx
+-
+----
+-apiVersion: networking.k8s.io/v1
+ kind: Ingress
+ metadata:
+   name: besu-ingress-routes
+-  namespace: quorum
++  namespace: besu
+   annotations:
+     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+     nginx.ingress.kubernetes.io/use-regex: "true"
+     nginx.ingress.kubernetes.io/configuration-snippet: |
+       rewrite (?i)/tessera-[0-9]?/(.*) /$1 break;
+-      rewrite (?i)/tessera-[0-9]?$ / break;    
++      rewrite (?i)/tessera-[0-9]?$ / break;
+       rewrite (?i)/kibana/(.*) /$1 break;
+       rewrite (?i)/kibana$ / break;
+     nginx.ingress.kubernetes.io/rewrite-target: /
+     #nginx.ingress.kubernetes.io/whitelist-source-range: w.x.y.z/32,a.b.c.d/32
+-
+ spec:
+-  ingressClassName: network-nginx
++  ingressClassName: besu-ingress-nginx
+   rules:
+   - http:
+       paths:
+@@ -65,6 +54,20 @@
+             name: besu-node-validator-4
+             port:
+               number: 8545
++      - path: /validator-5
++        pathType: Prefix
++        backend:
++          service:
++            name: besu-node-validator-5
++            port:
++              number: 8545
++      - path: /validator-6
++        pathType: Prefix
++        backend:
++          service:
++            name: besu-node-validator-6
++            port:
++              number: 8545
+       - path: /member-1
+         pathType: Prefix
+         backend:
+@@ -107,17 +110,4 @@
+             name: besu-node-member-3
+             port:
+               number: 9080
+-      - path: /kibana
+-        pathType: Prefix
+-        backend:
+-          service:
+-            name: kibana-kibana
+-            port:
+-              number: 5601
+-      - path: /
+-        pathType: Prefix
+-        backend:
+-          service:
+-            name: monitoring-grafana
+-            port:
+-              number: 3000
++
