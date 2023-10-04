@@ -38,6 +38,7 @@ patch -p1 < ../patch/helm/values/values.patch
 
 #Ingress Rules patch
 patch -p1 < ../patch/ingress/ingress-rules-monitoring.patch
+patch -p1 < ../patch/ingress/ingress-rules-besu.patch
 ```
 
 ```bash
@@ -61,7 +62,7 @@ Run `update-kubeconfig` command:
 
 ```bash
 export AWS_REGION=<region_name us-east-1>
-export CLUSTER_NAME=<eks_cluster_name real-digital-tf>
+export CLUSTER_NAME=<eks_cluster_name cluster-besu>
 aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME
 kubectl get nodes
 ```
@@ -71,10 +72,10 @@ kubectl get nodes
 #### Monitoring Ingress controller LoadBalancer
 
 ```bash
-ELB=$(kubectl get -n besu service quorum-monitoring-ingress-ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].hostname')
-echo "Grafana URL - http://${ELB}"
-echo "Kibana URL - http://${ELB}/kibana"
-echo "Explorer URL - http://${ELB}/explorer"
+ELB_MONITOR=$(kubectl get -n besu service monitoring-ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].hostname')
+echo "Grafana URL - http://${ELB_MONITOR}"
+echo "Kibana URL - http://${ELB_MONITOR}/kibana"
+echo "Explorer URL - http://${ELB_MONITOR}/explorer"
 ```
 
 #### Grafana default credentials
@@ -84,12 +85,12 @@ echo "Explorer URL - http://${ELB}/explorer"
 #### Configuring Index Pattern in Kibana
 
 ```bash
-curl -X POST http://${ELB}/kibana/api/index_patterns/index_pattern -H "kbn-xsrf: true" -H "Content-Type: application/json" -d '{
+curl -X POST http://${ELB_MONITOR}/kibana/api/index_patterns/index_pattern -H "kbn-xsrf: true" -H "Content-Type: application/json" -d '{
   "index_pattern": {
     "title": "filebeat-*",
     "timeFieldName": "@timestamp"
   }
-}' 
+}'
 ```
 
 #### Acessing Prometheus
@@ -102,7 +103,9 @@ open browser http://localhost:8080
 ### Testing Cluster Besu
 
 ```bash
-curl -v -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' "http://${ELB}/rpc"
+ELB_BESU=$(kubectl get -n besu service besu-ingress-nginx-controller -o json | jq -r '.status.loadBalancer.ingress[].hostname')
+curl -v -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' "http://${ELB_BESU}/rpc"
+echo "http://${ELB_BESU}/rpc"
 ```
 
 ## Stop and Start Besu

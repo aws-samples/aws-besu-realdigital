@@ -1,9 +1,9 @@
---- quorum-kubernetes/ingress/ingress-rules-monitoring.yml	2023-07-11 17:37:36.690475400 -0300
-+++ ./ingress-rules-monitoring.yml	2023-07-11 17:40:04.348263900 -0300
+--- quorum-kubernetes-consensys/ingress/ingress-rules-monitoring.yml	2023-10-03 21:04:18
++++ quorum-kubernetes/ingress/ingress-rules-monitoring.yml	2023-10-03 21:14:02
 @@ -1,19 +1,9 @@
  ---
 -# ingress-nginx IngressClass
--apiVersion: networking.k8s.io/v1
+ apiVersion: networking.k8s.io/v1
 -kind: IngressClass
 -metadata:
 -  name: monitoring-nginx
@@ -12,7 +12,7 @@
 -  controller: k8s.io/monitoring-ingress-nginx
 -
 ----
- apiVersion: networking.k8s.io/v1
+-apiVersion: networking.k8s.io/v1
  kind: Ingress
  metadata:
    name: besu-ingress-monitoring-routes
@@ -21,11 +21,14 @@
    annotations:
      nginx.ingress.kubernetes.io/ssl-redirect: "false"
      nginx.ingress.kubernetes.io/use-regex: "true"
-@@ -21,7 +11,6 @@
+@@ -21,9 +11,8 @@
        rewrite (?i)/kibana/(.*) /$1 break;
        rewrite (?i)/kibana$ / break;
      #nginx.ingress.kubernetes.io/whitelist-source-range: w.x.y.z/32,a.b.c.d/32
 -
  spec:
-   ingressClassName: monitoring-nginx
+-  ingressClassName: monitoring-nginx
++  ingressClassName: monitoring-ingress-nginx
    rules:
+   - http:
+       paths:

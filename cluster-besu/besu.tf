@@ -111,20 +111,21 @@ resource "helm_release" "filebeat" {
   ]
 }
 
-resource "helm_release" "ingress-nginx" {
+resource "helm_release" "monitoring-ingress-nginx" {
   depends_on = [helm_release.monitoring]
-  name       = "quorum-monitoring-ingress"
+  name       = "monitoring-ingress-nginx"
   repository = "https://kubernetes.github.io/ingress-nginx"
   chart      = "ingress-nginx"
+  version    = "4.7.1"
   namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
   wait       = "true"
   set {
     name  = "controller.ingressClassResource.name"
-    value = "monitoring-nginx"
+    value = "monitoring-ingress-nginx"
   }
   set {
     name  = "controller.ingressClassResource.controllerValue"
-    value = "k8s.io/monitoring-ingress-nginx"
+    value = "k8s.io/monitoring-ingress-nginx-control"
   }
   set {
     name  = "controller.replicaCount"
@@ -149,7 +150,7 @@ resource "helm_release" "ingress-nginx" {
 }
 
 resource "kubectl_manifest" "ingress-rules-monitoring-ingress" {
-  depends_on = [helm_release.ingress-nginx]
+  depends_on = [helm_release.monitoring-ingress-nginx]
   yaml_body  = file("${path.module}/quorum-kubernetes/ingress/ingress-rules-monitoring.yml")
 }
 
@@ -345,8 +346,45 @@ resource "time_sleep" "wait_for_member-2" {
 # #   ]
 # # }
 
+resource "helm_release" "besu-ingress-nginx" {
+  depends_on = [helm_release.monitoring]
+  name       = "besu-ingress-nginx"
+  repository = "https://kubernetes.github.io/ingress-nginx"
+  chart      = "ingress-nginx"
+  version    = "4.7.1"
+  namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
+  wait       = "true"
+  set {
+    name  = "controller.ingressClassResource.name"
+    value = "besu-ingress-nginx"
+  }
+  set {
+    name  = "controller.ingressClassResource.controllerValue"
+    value = "k8s.io/besu-ingress-nginx-control"
+  }
+  set {
+    name  = "controller.replicaCount"
+    value = 2
+  }
+  set {
+    name  = "controller.nodeSelector.kubernetes\\.io/os"
+    value = "linux"
+  }
+  set {
+    name  = "defaultBackend.nodeSelector.kubernetes\\.io/os"
+    value = "linux"
+  }
+  set {
+    name  = "controller.admissionWebhooks.patch.nodeSelector.kubernetes\\.io/os"
+    value = "linux"
+  }
+  set {
+    name  = "controller.service.externalTrafficPolicy"
+    value = "Local"
+  }
+}
 resource "kubectl_manifest" "ingress-rules-besu" {
-  depends_on = [time_sleep.wait_for_member-2]
+  depends_on = [time_sleep.wait_for_member-2, helm_release.besu-ingress-nginx]
   yaml_body  = file("${path.module}/quorum-kubernetes/ingress/ingress-rules-besu.yml")
 }
 
