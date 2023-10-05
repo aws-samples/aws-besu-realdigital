@@ -51,7 +51,7 @@ terraform apply -target module.eks_blueprints_addons -auto-approve
 
 #Deploy Besu
 terraform apply -target helm_release.bootnode-2 -auto-approve && \
-terraform apply -target helm_release.validator-4 -auto-approve && \
+terraform apply -target helm_release.validator-6 -auto-approve && \
 terraform apply -target helm_release.member-2 -auto-approve && \
 terraform apply -auto-approve
 ```
@@ -142,15 +142,15 @@ kubectl scale statefulset/besu-node-member-1 --replicas 1 -n besu
 kubectl scale statefulset/besu-node-member-2 --replicas 1 -n besu
 ```
 
-### Installing Sirato - Optional
+### Installing Chainlens - Optional
 
 ```bash
 git clone https://github.com/web3labs/sirato-free.git
 cd sirato-free/k8s
-./sirato-launch.sh http://besu-node-rpc-1.besu.svc.cluster.local:8545
+./chainlens-launch.sh http://besu-node-rpc-1.besu.svc.cluster.local:8545
 
 #Getting LoadBalancer URL
-kubectl get service/sirato-proxy -n sirato-explorer -ojsonpath='External: http://{.status.loadBalancer.ingress[0].hostname}{"\n"}'
+kubectl get service/chainlens-proxy -n chainlens-explorer -ojsonpath='External: http://{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 ```
 
 ## Troubleshooting
@@ -162,7 +162,7 @@ kubectl run mycurlpod --rm --image=curlimages/curl -i --tty -- sh
 ## How to destroy
 
 ```bash
-kubectl delete namespace sirato-explorer
+kubectl delete namespace chainlens-explorer
 terraform destroy -target helm_release.genesis -auto-approve && \
 terraform destroy -target helm_release.monitoring -auto-approve && \
 terraform destroy -target kubectl_manifest.karpenter_node_template -auto-approve && \
