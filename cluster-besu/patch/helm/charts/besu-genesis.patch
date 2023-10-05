@@ -1,6 +1,6 @@
-diff -Naur quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml
---- quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml	2023-07-04 22:33:08.000000000 -0300
-+++ quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml	2023-07-04 18:31:46.000000000 -0300
+diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml	2023-10-04 22:40:36
++++ quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml	2023-10-04 15:47:25
 @@ -4,9 +4,6 @@
  metadata:
    name: {{ include "besu-genesis.name" . }}-cleanup
@@ -43,9 +43,9 @@ diff -Naur quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-clea
 -
 -{{- end}} 
 +{{- end}}
-diff -Naur quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init.yaml quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init.yaml
---- quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init.yaml	2023-07-04 22:33:08.000000000 -0300
-+++ quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init.yaml	2023-07-04 18:31:46.000000000 -0300
+diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-init.yaml quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-init.yaml	2023-10-04 22:40:36
++++ quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init.yaml	2023-10-04 15:47:25
 @@ -4,9 +4,6 @@
  metadata:
    name: {{ include "besu-genesis.name" . }}-init
@@ -71,9 +71,10 @@ diff -Naur quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init
            args:
              - |
 -{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
--              function safeWriteSecret {
--                key=$1
--                fpath=$2
++{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
+               function safeWriteSecret {
+                 key=$1
+                 fpath=$2
 -                az keyvault secret show --vault-name {{ .Values.azure.keyvaultName }} --name $key > /dev/null 2>&1
 -                if [ $? -ne 0 ]; then
 -                  az keyvault secret set --vault-name {{ .Values.azure.keyvaultName }} --name $key --file $fpath --encoding utf-8
@@ -87,10 +88,9 @@ diff -Naur quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init
 -
 -{{- else if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
 -              
-+{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
-               function safeWriteSecret {
-                 key=$1
-                 fpath=$2
+-              function safeWriteSecret {
+-                key=$1
+-                fpath=$2
 +                overwrite=$3
                  aws secretsmanager describe-secret --secret-id $key > /dev/null 2>&1
                  if [ $? -ne 0 ]; then
@@ -176,10 +176,10 @@ diff -Naur quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init
                    # add to the static-nodes
                    pubkey=$(cat $FOLDER_PATH/${f}/nodekey.pub )
                    echo ",\"enode://$pubkey@besu-node-validator-$i-0.besu-node-validator-$i.{{ .Release.Namespace }}.svc.cluster.local:30303?discport=0\"" >> $FOLDER_PATH/static-nodes.json
-diff -Naur quorum-kubernetes/helm/charts/besu-genesis/values.yaml quorum-kubernetes/helm/charts/besu-genesis/values.yaml
---- quorum-kubernetes/helm/charts/besu-genesis/values.yaml	2023-07-04 22:33:08.000000000 -0300
-+++ quorum-kubernetes/helm/charts/besu-genesis/values.yaml	2023-07-04 18:31:46.000000000 -0300
-@@ -4,25 +4,14 @@
+diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/values.yaml quorum-kubernetes/helm/charts/besu-genesis/values.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-genesis/values.yaml	2023-10-04 22:40:36
++++ quorum-kubernetes/helm/charts/besu-genesis/values.yaml	2023-10-04 15:47:25
+@@ -4,26 +4,15 @@
    removeGenesisOnDelete: true
  
  cluster:
@@ -193,7 +193,8 @@ diff -Naur quorum-kubernetes/helm/charts/besu-genesis/values.yaml quorum-kuberne
    serviceAccountName: quorum-node-secrets-sa
    # the region you are deploying to
 -  region: ap-southeast-2
--
++  region: us-east-1
+ 
 -azure:
 -  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
 -  identityName: quorum-pod-identity
@@ -204,10 +205,10 @@ diff -Naur quorum-kubernetes/helm/charts/besu-genesis/values.yaml quorum-kuberne
 -  tenantId: azure-tenantId
 -  # the subscription ID to use - this needs to be set explictly when using multi tenancy
 -  subscriptionId: azure-subscriptionId
-+  region: us-east-1
- 
+-
  # the raw Genesis config
  # rawGenesisConfig.blockchain.nodes set the number of validators/signers
+ rawGenesisConfig:
 @@ -41,11 +30,11 @@
    blockchain:
      nodes:
