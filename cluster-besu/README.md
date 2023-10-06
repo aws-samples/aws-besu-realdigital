@@ -153,6 +153,10 @@ cd sirato-free/k8s
 kubectl get service/chainlens-proxy -n chainlens-explorer -ojsonpath='External: http://{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 ```
 
+### Using blockscout
+
+See [Blockscout sample](../samples/blockscout/README.md)
+
 ## Troubleshooting
 
 ```bash
@@ -170,5 +174,6 @@ terraform destroy -target module.eks_blueprints_addons -auto-approve && \
 terraform destroy -target module.eks -auto-approve && \
 terraform destroy -auto-approve
 chmod +x deleteBesuSecrets.sh
+export AWS_PAGER=""
 ./deleteBesuSecrets.sh
 ```

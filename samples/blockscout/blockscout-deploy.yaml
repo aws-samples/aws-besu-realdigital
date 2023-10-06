@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: blockscout
+  namespace: blockscout
+spec:
+  type: LoadBalancer
+  ports:
+    - name: "26000"
+      port: 26000
+      targetPort: 4000
+  selector:
+    app: blockscout
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blockscout
+  namespace: blockscout
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blockscout
+  template:
+    metadata:
+      labels:
+        app: blockscout
+    spec:
+      containers:
+      - name: blockscout
+        image: consensys/blockscout:v4.1.5-beta
+        ports:
+          - containerPort: 4000
+        resources:
+           limits:
+             cpu: "1"
+             memory: 2G
+           requests:
+             cpu: 500m
+             memory: 1G
+        command:
+          - /bin/sh
+          - -c
+          - |
+            cd /opt/app/;
+            echo $MIX_ENV && mix do ecto.create, ecto.migrate; mix phx.server;
+        env:
+          - name: CHAIN_ID
+            value: "1337"
+          - name: COIN
+            value: eth
+          - name: DATABASE_URL
+            value: postgresql://postgres:postgres@postgres-svc:5432/postgres?ssl=false
+          - name: ECTO_USE_SSL
+            value: "false"
+          - name: ETHEREUM_JSONRPC_HTTP_URL
+            value: http://besu-node-rpc-1.besu.svc.cluster.local:8545
+          - name: ETHEREUM_JSONRPC_TRACE_URL
+            value: http://besu-node-rpc-1.besu.svc.cluster.local:8545
+          - name: ETHEREUM_JSONRPC_TRANSPORT
+            value: http
+          - name: ETHEREUM_JSONRPC_VARIANT
+            value: besu
+          - name: ETHEREUM_JSONRPC_WS_URL
+            value: ws://besu-node-rpc-1.besu.svc.cluster.local:8546
+          - name: NETWORK
+            value: besu-network
+          - name: PORT
+            value: "4000"
+          - name: POSTGRES_PASSWORD
+            value: postgres
+          - name: POSTGRES_USER
+            value: postgres
+          - name: SUBNETWORK
+            value: besu-sample
+          - name: SECRET_KEY_BASE
+            value: 086dce000ab0fd45c5f03192e2ec0ad2982ab24f11ac9e26933bdc1974b8b702
