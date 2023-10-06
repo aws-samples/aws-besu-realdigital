@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-svc
+  namespace: blockscout
+  labels:
+    app: postgres
+spec:
+  ports:
+  - port: 5432
+    name: postgres
+  type: NodePort
+  selector:
+    app: postgresql-db
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-statefulset
+  namespace: blockscout
+  labels:
+    app: postgresql-db
+spec:
+  serviceName: "postgresql-db"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql-db
+  template:
+    metadata:
+      labels:
+        app: postgresql-db
+    spec:
+      containers:
+      - name: postgresql-db
+        image: postgres:13.6-alpine
+        ports:
+        - containerPort: 5432
+          name: postgresdb
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2G
+          requests:
+            cpu: 500m
+            memory: 1G
+        env:
+          - name: POSTGRES_HOST_AUTH_METHOD
+            value: trust
+          - name: POSTGRES_PASSWORD
+            value: postgres
+          - name: POSTGRES_USER
+            value: postgres
+          - name: PGDATA
+            value: /data/pgdata
+        volumeMounts:
+        - name: pvc-blockscoutpostgres
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: pvc-blockscoutpostgres
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      # storageClassName: "linode-block-storage-retain"
+      resources:
+        requests:
+          storage: 20Gi

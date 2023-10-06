@@ -216,7 +216,7 @@ resource "helm_release" "validator-1" {
   namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
   wait       = "true"
   values = [
-    file("${path.module}/quorum-kubernetes/helm/values/validator.yml")
+    file("${path.module}/quorum-kubernetes/helm/values/validator-a.yml")
   ]
 }
 
@@ -234,7 +234,7 @@ resource "helm_release" "validator-2" {
   namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
   wait       = "true"
   values = [
-    file("${path.module}/quorum-kubernetes/helm/values/validator.yml")
+    file("${path.module}/quorum-kubernetes/helm/values/validator-a.yml")
   ]
 }
 
@@ -252,7 +252,7 @@ resource "helm_release" "validator-3" {
   namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
   wait       = "true"
   values = [
-    file("${path.module}/quorum-kubernetes/helm/values/validator.yml")
+    file("${path.module}/quorum-kubernetes/helm/values/validator-b.yml")
   ]
 }
 
@@ -270,7 +270,7 @@ resource "helm_release" "validator-4" {
   namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
   wait       = "true"
   values = [
-    file("${path.module}/quorum-kubernetes/helm/values/validator.yml")
+    file("${path.module}/quorum-kubernetes/helm/values/validator-b.yml")
   ]
 }
 
@@ -280,8 +280,44 @@ resource "time_sleep" "wait_for_validator4" {
   depends_on = [helm_release.validator-4]
 }
 
-resource "helm_release" "rpc-1" {
+resource "helm_release" "validator-5" {
   depends_on = [time_sleep.wait_for_validator4]
+  name       = "validator-5"
+  repository = "${path.module}/quorum-kubernetes/helm/charts"
+  chart      = "besu-node"
+  namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
+  wait       = "true"
+  values = [
+    file("${path.module}/quorum-kubernetes/helm/values/validator-c.yml")
+  ]
+}
+
+resource "time_sleep" "wait_for_validator5" {
+  create_duration = local.validator_timer
+
+  depends_on = [helm_release.validator-5]
+}
+
+resource "helm_release" "validator-6" {
+  depends_on = [time_sleep.wait_for_validator5]
+  name       = "validator-6"
+  repository = "${path.module}/quorum-kubernetes/helm/charts"
+  chart      = "besu-node"
+  namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
+  wait       = "true"
+  values = [
+    file("${path.module}/quorum-kubernetes/helm/values/validator-c.yml")
+  ]
+}
+
+resource "time_sleep" "wait_for_validator6" {
+  create_duration = local.validator_timer
+
+  depends_on = [helm_release.validator-6]
+}
+
+resource "helm_release" "rpc-1" {
+  depends_on = [time_sleep.wait_for_validator6]
   name       = "rpc-1"
   repository = "${path.module}/quorum-kubernetes/helm/charts"
   chart      = "besu-node"
