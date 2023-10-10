@@ -1,10 +1,10 @@
 # AWS - Real Digital with EKS and Terraform
 
-This sample repository aims to help AWS customers reduce the initial setup time of a [Hyperledge Besu](https://www.hyperledger.org/use/besu) infrastructure understanding the technology also used by the [Real Digital Pilot](https://github.com/bacen/pilotord-kit-onboarding) (a.k.a. [DREX](https://www.bcb.gov.br/estabilidadefinanceira/drex)).
+This sample repository aims to help AWS customers reduce the initial setup time of a [Hyperledger Besu](https://www.hyperledger.org/use/besu) infrastructure. The technology is also used by the Central Bank of Brazil, in their [Real Digital Pilot](https://github.com/bacen/pilotord-kit-onboarding), also known as [DREX](https://www.bcb.gov.br/estabilidadefinanceira/drex).
 
 ## Table of Contents
 
-This repository is divide into two main sections:
+This repository is divided in two main sections:
 
 1. [Hyperledge Besu Cluster Setup](./cluster-besu/README.md)
 1. [Hyperledge Besu Single Node](./single_node/README.md)
