@@ -1,6 +1,6 @@
 # AWS - Real Digital with EKS and Terraform
 
-Deploy Hyperledge Besu cluster using Hashicorp Terraform (IaC) and some AWS Services: [Amazon EKS](https://aws.amazon.com/eks/), [Amazon EC2](https://aws.amazon.com/ec2/), [Amazon EBS](https://aws.amazon.com/ebs/), [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/). To improve the auto-scaling experience we are using [Karpenter](https://karpenter.sh/).
+Deploy Hyperledger Besu cluster using Hashicorp Terraform (IaC) and some AWS Services: [Amazon EKS](https://aws.amazon.com/eks/), [Amazon EC2](https://aws.amazon.com/ec2/), [Amazon EBS](https://aws.amazon.com/ebs/), [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/). To improve the auto-scaling experience we are using [Karpenter](https://karpenter.sh/).
 
 ## Table of Contents
 
