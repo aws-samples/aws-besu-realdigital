@@ -2,10 +2,12 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 19.13"
 
-  cluster_name                   = local.name
-  cluster_version                = "1.24"
-  cluster_endpoint_public_access = true
-  cluster_enabled_log_types      = ["api", "audit", "authenticator", "controllerManager", "scheduler"] # Backwards compat
+  cluster_name                         = local.name
+  cluster_version                      = local.cluster_version
+  cluster_endpoint_public_access       = local.cluster_endpoint_public_access
+  cluster_endpoint_public_access_cidrs = local.allowed_public_cidrs
+  cluster_endpoint_private_access      = local.cluster_endpoint_private_access
+  cluster_enabled_log_types            = ["api", "audit", "authenticator", "controllerManager", "scheduler"] # Backwards compat
 
   iam_role_name            = "${local.name}-cluster-role" # Backwards compat
   iam_role_use_name_prefix = false                        # Backwards compat
@@ -17,8 +19,6 @@ module "eks" {
 
   create_cluster_security_group = false
   create_node_security_group    = false
-
-
 
   manage_aws_auth_configmap = true
   aws_auth_roles = [
@@ -43,7 +43,7 @@ module "eks" {
       iam_role_use_name_prefix   = false                   # Backwards compat
       use_custom_launch_template = false                   # Backwards compat
 
-      instance_types = ["m5.large"]
+      instance_types = ["c6a.large", "c5a.large", "c6i.large", "c5.large"]
 
       min_size     = 2
       max_size     = 3

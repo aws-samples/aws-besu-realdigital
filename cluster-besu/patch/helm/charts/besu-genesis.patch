@@ -1,6 +1,6 @@
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml	2023-10-04 15:47:25
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml	2024-01-27 15:24:58.358501900 -0300
++++ quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-cleanup.yaml	2024-01-27 18:11:32.115967600 -0300
 @@ -4,9 +4,6 @@
  metadata:
    name: {{ include "besu-genesis.name" . }}-cleanup
@@ -43,9 +43,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/template
 -
 -{{- end}} 
 +{{- end}}
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-init.yaml quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-init.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init.yaml	2023-10-04 15:47:25
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-init.yaml quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-genesis/templates/genesis-job-init.yaml	2024-01-27 15:24:58.388500000 -0300
++++ quorum-kubernetes/helm/charts/besu-genesis/templates/genesis-job-init.yaml	2024-01-27 18:11:32.127971400 -0300
 @@ -4,9 +4,6 @@
  metadata:
    name: {{ include "besu-genesis.name" . }}-init
@@ -71,10 +71,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/template
            args:
              - |
 -{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
-+{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
-               function safeWriteSecret {
-                 key=$1
-                 fpath=$2
+-              function safeWriteSecret {
+-                key=$1
+-                fpath=$2
 -                az keyvault secret show --vault-name {{ .Values.azure.keyvaultName }} --name $key > /dev/null 2>&1
 -                if [ $? -ne 0 ]; then
 -                  az keyvault secret set --vault-name {{ .Values.azure.keyvaultName }} --name $key --file $fpath --encoding utf-8
@@ -88,9 +87,10 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/template
 -
 -{{- else if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
 -              
--              function safeWriteSecret {
--                key=$1
--                fpath=$2
++{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
+               function safeWriteSecret {
+                 key=$1
+                 fpath=$2
 +                overwrite=$3
                  aws secretsmanager describe-secret --secret-id $key > /dev/null 2>&1
                  if [ $? -ne 0 ]; then
@@ -120,14 +120,17 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/template
  {{- end }}
  
                function safeWriteBesuPeersConfigmap {
-@@ -109,11 +91,14 @@
+@@ -107,13 +89,16 @@
+               }
+ 
                echo "Creating config ..."
-               FOLDER_PATH=$(quorum-genesis-tool --consensus {{ .Values.rawGenesisConfig.genesis.config.algorithm.consensus }} {{ if .Values.rawGenesisConfig.blockchain.nodes.generate }} --validators {{ .Values.rawGenesisConfig.blockchain.nodes.count }} {{ else }} --validators 0 {{ end }} --members 0 --bootnodes 0 --chainID {{ .Values.rawGenesisConfig.genesis.config.chainId }} --blockperiod {{ .Values.rawGenesisConfig.genesis.config.algorithm.blockperiodseconds }} --epochLength {{ .Values.rawGenesisConfig.genesis.config.algorithm.epochlength }} --requestTimeout {{ .Values.rawGenesisConfig.genesis.config.algorithm.requesttimeoutseconds }} --difficulty {{ .Values.rawGenesisConfig.genesis.difficulty }} --gasLimit {{ .Values.rawGenesisConfig.genesis.gasLimit }} --coinbase {{ .Values.rawGenesisConfig.genesis.coinbase }} {{ if .Values.rawGenesisConfig.blockchain.accountPassword }} --accountPassword {{ .Values.rawGenesisConfig.blockchain.accountPassword }} {{ end }} --quickstartDevAccounts {{ .Values.rawGenesisConfig.genesis.includeQuickStartAccounts }} --outputPath /generated-config | tail -1 | sed -e "s/^Artifacts in folder: //")
+-              FOLDER_PATH=$(quorum-genesis-tool --consensus {{ .Values.rawGenesisConfig.genesis.config.algorithm.consensus }} {{ if .Values.rawGenesisConfig.blockchain.nodes.generate }} --validators {{ .Values.rawGenesisConfig.blockchain.nodes.count }} {{ else }} --validators 0 {{ end }} --members 0 --bootnodes 0 --chainID {{ .Values.rawGenesisConfig.genesis.config.chainId }} --blockperiod {{ .Values.rawGenesisConfig.genesis.config.algorithm.blockperiodseconds }} --epochLength {{ .Values.rawGenesisConfig.genesis.config.algorithm.epochlength }} --requestTimeout {{ .Values.rawGenesisConfig.genesis.config.algorithm.requesttimeoutseconds }} --difficulty {{ .Values.rawGenesisConfig.genesis.difficulty }} --gasLimit {{ .Values.rawGenesisConfig.genesis.gasLimit }} --coinbase {{ .Values.rawGenesisConfig.genesis.coinbase }} {{ if .Values.rawGenesisConfig.blockchain.accountPassword }} --accountPassword {{ .Values.rawGenesisConfig.blockchain.accountPassword }} {{ end }} --quickstartDevAccounts {{ .Values.rawGenesisConfig.genesis.includeQuickStartAccounts }} --outputPath /generated-config | tail -1 | sed -e "s/^Artifacts in folder: //")
++              FOLDER_PATH=$(quorum-genesis-tool --consensus {{ .Values.rawGenesisConfig.genesis.config.algorithm.consensus }} {{ if .Values.rawGenesisConfig.blockchain.nodes.generate }} --validators {{ .Values.rawGenesisConfig.blockchain.nodes.count }} {{ else }} --validators 0 {{ end }} --members 0 --bootnodes 0 --chainID {{ .Values.rawGenesisConfig.genesis.config.chainId }} --maxCodeSize { .Values.rawGenesisConfig.genesis.config.contractSizeLimit }} --blockperiod {{ .Values.rawGenesisConfig.genesis.config.algorithm.blockperiodseconds }} --epochLength {{ .Values.rawGenesisConfig.genesis.config.algorithm.epochlength }} --requestTimeout {{ .Values.rawGenesisConfig.genesis.config.algorithm.requesttimeoutseconds }} --difficulty {{ .Values.rawGenesisConfig.genesis.difficulty }} --gasLimit {{ .Values.rawGenesisConfig.genesis.gasLimit }} --coinbase {{ .Values.rawGenesisConfig.genesis.coinbase }} {{ if .Values.rawGenesisConfig.blockchain.accountPassword }} --accountPassword {{ .Values.rawGenesisConfig.blockchain.accountPassword }} {{ end }} --quickstartDevAccounts {{ .Values.rawGenesisConfig.genesis.includeQuickStartAccounts }} --outputPath /generated-config | tail -1 | sed -e "s/^Artifacts in folder: //")
  
 -              echo "Creating bootnodes configmap in k8s ..."
 -              echo "[]" > /tmp/besu-bootnodes
 -              kubectl create configmap --namespace {{ .Release.Namespace }} besu-bootnodes --from-file=bootnodes=/tmp/besu-bootnodes
-+              echo "quorum-genesis-tool --consensus {{ .Values.rawGenesisConfig.genesis.config.algorithm.consensus }} {{ if .Values.rawGenesisConfig.blockchain.nodes.generate }} --validators {{ .Values.rawGenesisConfig.blockchain.nodes.count }} {{ else }} --validators 0 {{ end }} --members 0 --bootnodes 0 --chainID {{ .Values.rawGenesisConfig.genesis.config.chainId }} --blockperiod {{ .Values.rawGenesisConfig.genesis.config.algorithm.blockperiodseconds }} --epochLength {{ .Values.rawGenesisConfig.genesis.config.algorithm.epochlength }} --requestTimeout {{ .Values.rawGenesisConfig.genesis.config.algorithm.requesttimeoutseconds }} --difficulty {{ .Values.rawGenesisConfig.genesis.difficulty }} --gasLimit {{ .Values.rawGenesisConfig.genesis.gasLimit }} --coinbase {{ .Values.rawGenesisConfig.genesis.coinbase }} {{ if .Values.rawGenesisConfig.blockchain.accountPassword }} --accountPassword {{ .Values.rawGenesisConfig.blockchain.accountPassword }} {{ end }} --quickstartDevAccounts {{ .Values.rawGenesisConfig.genesis.includeQuickStartAccounts }} --outputPath /generated-config"
++              echo "quorum-genesis-tool --consensus {{ .Values.rawGenesisConfig.genesis.config.algorithm.consensus }} {{ if .Values.rawGenesisConfig.blockchain.nodes.generate }} --validators {{ .Values.rawGenesisConfig.blockchain.nodes.count }} {{ else }} --validators 0 {{ end }} --members 0 --bootnodes 0 --chainID {{ .Values.rawGenesisConfig.genesis.config.chainId }} --maxCodeSize { .Values.rawGenesisConfig.genesis.config.contractSizeLimit }} --blockperiod {{ .Values.rawGenesisConfig.genesis.config.algorithm.blockperiodseconds }} --epochLength {{ .Values.rawGenesisConfig.genesis.config.algorithm.epochlength }} --requestTimeout {{ .Values.rawGenesisConfig.genesis.config.algorithm.requesttimeoutseconds }} --difficulty {{ .Values.rawGenesisConfig.genesis.difficulty }} --gasLimit {{ .Values.rawGenesisConfig.genesis.gasLimit }} --coinbase {{ .Values.rawGenesisConfig.genesis.coinbase }} {{ if .Values.rawGenesisConfig.blockchain.accountPassword }} --accountPassword {{ .Values.rawGenesisConfig.blockchain.accountPassword }} {{ end }} --quickstartDevAccounts {{ .Values.rawGenesisConfig.genesis.includeQuickStartAccounts }} --outputPath /generated-config"
  
 -              echo $FOLDER_PATH
 +              # Disable because bootnode configmap will create into besu chart when isBootNode
@@ -176,10 +179,10 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/template
                    # add to the static-nodes
                    pubkey=$(cat $FOLDER_PATH/${f}/nodekey.pub )
                    echo ",\"enode://$pubkey@besu-node-validator-$i-0.besu-node-validator-$i.{{ .Release.Namespace }}.svc.cluster.local:30303?discport=0\"" >> $FOLDER_PATH/static-nodes.json
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/values.yaml quorum-kubernetes/helm/charts/besu-genesis/values.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-genesis/values.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-genesis/values.yaml	2023-10-04 15:47:25
-@@ -4,26 +4,15 @@
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/values.yaml quorum-kubernetes/helm/charts/besu-genesis/values.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-genesis/values.yaml	2024-01-27 15:24:58.454500400 -0300
++++ quorum-kubernetes/helm/charts/besu-genesis/values.yaml	2024-02-02 10:36:16.512986300 -0300
+@@ -4,25 +4,14 @@
    removeGenesisOnDelete: true
  
  cluster:
@@ -193,8 +196,7 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/values.y
    serviceAccountName: quorum-node-secrets-sa
    # the region you are deploying to
 -  region: ap-southeast-2
-+  region: us-east-1
- 
+-
 -azure:
 -  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
 -  identityName: quorum-pod-identity
@@ -205,11 +207,24 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/values.y
 -  tenantId: azure-tenantId
 -  # the subscription ID to use - this needs to be set explictly when using multi tenancy
 -  subscriptionId: azure-subscriptionId
--
++  region: us-east-1
+ 
  # the raw Genesis config
  # rawGenesisConfig.blockchain.nodes set the number of validators/signers
- rawGenesisConfig:
-@@ -41,11 +30,11 @@
+@@ -30,22 +19,23 @@
+   genesis:
+     config:
+       chainId: 1337
++      contractSizeLimit: 2147483647
+       algorithm:
+         consensus: qbft
+         blockperiodseconds: 10
+         epochlength: 30000
+         requesttimeoutseconds: 20
+-    gasLimit: '0xf7b760' 
++    gasLimit: '0x1fffffffffffff'
+     difficulty: '0x1'
+     coinbase: '0x0000000000000000000000000000000000000000'
    blockchain:
      nodes:
        generate: true
@@ -221,5 +236,5 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-genesis/values.y
  image:
    repository: consensys/quorum-k8s-hooks
 -  tag: qgt-0.2.11
-+  tag: qgt-0.2.6
++  tag: qgt-0.2.12
    pullPolicy: IfNotPresent

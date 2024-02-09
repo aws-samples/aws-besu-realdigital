@@ -197,7 +197,10 @@ module "eks_blueprints_addons" {
     }
   }
 
-  enable_aws_load_balancer_controller          = false
+  enable_aws_load_balancer_controller = true
+  aws_load_balancer_controller = {
+    wait = true
+  }
   enable_secrets_store_csi_driver              = true
   enable_secrets_store_csi_driver_provider_aws = true
   enable_karpenter                             = true
@@ -214,3 +217,23 @@ resource "aws_ec2_tag" "karpenter_tag_cluster_primary_security_group" {
   key         = "karpenter.sh/discovery"
   value       = local.name
 }
+
+# # This should not affect the name of the cluster primary security group
+# # Ref: https://github.com/terraform-aws-modules/terraform-aws-eks/pull/2006
+# # Ref: https://github.com/terraform-aws-modules/terraform-aws-eks/pull/2008
+# #for_each = var.create_additional_tags_for_cluster_security_group ? : { for k, v in merge(var.tags, var.cluster_tags) : k => v if local.create && k != "Name" } : {}
+
+# module "admin_team" {
+#   source = "aws-ia/eks-blueprints-teams/aws"
+
+#   name = "admin-team"
+
+#   # Enables elevated, admin privileges for this team
+#   enable_admin = true
+#   users        = ["arn:aws:iam::999999999:role/Admin"]
+#   cluster_arn  = module.eks.cluster_arn
+
+#   tags = {
+#     environment = "besu"
+#   }
+# }
