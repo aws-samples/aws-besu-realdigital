@@ -5,7 +5,7 @@ Version: 4.1.5-beta
 ## How to deploy
 
 ```bash
-kubectl create ns blocksout
+kubectl create ns blockscout
 
 kubectl apply -f blockscout-deploy.yaml -f blockscoutpostgres-statefulset.yaml
 

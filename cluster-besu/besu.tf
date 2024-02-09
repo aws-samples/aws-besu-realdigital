@@ -1,7 +1,7 @@
 module "iam_policy_quorum_node_secrets" {
   source = "terraform-aws-modules/iam/aws//modules/iam-policy"
 
-  name        = "iam_policy_quorum_node_secrets"
+  name        = "${module.eks.cluster_name}-iam_policy_quorum_node_secrets"
   path        = "/"
   description = "Besu Pods to Secret Manager acesses"
 
@@ -19,7 +19,7 @@ EOF
 
 module "iam_role_quorum_node_secrets" {
   source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  role_name = "quorum-node-secrets-sa"
+  role_name = "${module.eks.cluster_name}-quorum-node-secrets-sa"
 
   role_policy_arns = {
     policy = module.iam_policy_quorum_node_secrets.arn
@@ -111,46 +111,91 @@ resource "helm_release" "filebeat" {
   ]
 }
 
-resource "helm_release" "monitoring-ingress-nginx" {
+resource "aws_security_group" "monitoring-ingress-nginx" {
+  name        = "${module.eks.cluster_name}-monitoring-ingress-nginx"
+  description = "Allow public HTTP and HTTPS traffic"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # modify to your requirements
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # modify to your requirements
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = local.tags
+}
+module "monitoring-ingress-nginx" {
+  source  = "aws-ia/eks-blueprints-addons/aws"
+  version = "~> 1.6"
+
   depends_on = [helm_release.monitoring]
-  name       = "monitoring-ingress-nginx"
-  repository = "https://kubernetes.github.io/ingress-nginx"
-  chart      = "ingress-nginx"
-  version    = "4.7.1"
-  namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
-  wait       = "true"
-  set {
-    name  = "controller.ingressClassResource.name"
-    value = "monitoring-ingress-nginx"
-  }
-  set {
-    name  = "controller.ingressClassResource.controllerValue"
-    value = "k8s.io/monitoring-ingress-nginx-control"
-  }
-  set {
-    name  = "controller.replicaCount"
-    value = 1
-  }
-  set {
-    name  = "controller.nodeSelector.kubernetes\\.io/os"
-    value = "linux"
-  }
-  set {
-    name  = "defaultBackend.nodeSelector.kubernetes\\.io/os"
-    value = "linux"
-  }
-  set {
-    name  = "controller.admissionWebhooks.patch.nodeSelector.kubernetes\\.io/os"
-    value = "linux"
-  }
-  set {
-    name  = "controller.service.externalTrafficPolicy"
-    value = "Local"
+
+  cluster_name      = module.eks.cluster_name
+  cluster_endpoint  = module.eks.cluster_endpoint
+  cluster_version   = module.eks.cluster_version
+  oidc_provider_arn = module.eks.oidc_provider_arn
+
+  enable_ingress_nginx = true
+
+  ingress_nginx = {
+    name          = "monitoring-ingress-nginx"
+    namespace     = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
+    chart         = "ingress-nginx"
+    chart_version = "4.7.1"
+    repository    = "https://kubernetes.github.io/ingress-nginx"
+    wait          = true
+
+    values = [
+      <<-EOT
+          controller:
+            replicaCount: 2
+            service:
+              annotations:
+                service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+                service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+                service.beta.kubernetes.io/aws-load-balancer-security-groups: ${aws_security_group.monitoring-ingress-nginx.id}
+                service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: true
+              loadBalancerClass: service.k8s.aws/nlb
+            topologySpreadConstraints:
+              - maxSkew: 1
+                topologyKey: topology.kubernetes.io/zone
+                whenUnsatisfiable: ScheduleAnyway
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: monitoring-ingress-nginx
+              - maxSkew: 1
+                topologyKey: kubernetes.io/hostname
+                whenUnsatisfiable: ScheduleAnyway
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: monitoring-ingress-nginx
+            minAvailable: 1
+            ingressClassResource:
+              name: monitoring-ingress-nginx
+              enabled: true
+              default: false
+              controllerValue: k8s.io/monitoring-ingress-nginx
+        EOT
+    ]
   }
 }
-
 resource "kubectl_manifest" "ingress-rules-monitoring-ingress" {
-  depends_on = [helm_release.monitoring-ingress-nginx]
+  depends_on = [module.monitoring-ingress-nginx]
   yaml_body  = file("${path.module}/quorum-kubernetes/ingress/ingress-rules-monitoring.yml")
 }
 
@@ -382,45 +427,92 @@ resource "time_sleep" "wait_for_member-2" {
 # #   ]
 # # }
 
-resource "helm_release" "besu-ingress-nginx" {
+resource "aws_security_group" "besu-ingress-nginx" {
+  name        = "${module.eks.cluster_name}-besu-nginx-external"
+  description = "Allow public HTTP and HTTPS traffic"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # modify to your requirements
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # modify to your requirements
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = local.tags
+}
+module "besu-ingress-nginx" {
+  source  = "aws-ia/eks-blueprints-addons/aws"
+  version = "~> 1.6"
+
   depends_on = [helm_release.monitoring]
-  name       = "besu-ingress-nginx"
-  repository = "https://kubernetes.github.io/ingress-nginx"
-  chart      = "ingress-nginx"
-  version    = "4.7.1"
-  namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
-  wait       = "true"
-  set {
-    name  = "controller.ingressClassResource.name"
-    value = "besu-ingress-nginx"
-  }
-  set {
-    name  = "controller.ingressClassResource.controllerValue"
-    value = "k8s.io/besu-ingress-nginx-control"
-  }
-  set {
-    name  = "controller.replicaCount"
-    value = 2
-  }
-  set {
-    name  = "controller.nodeSelector.kubernetes\\.io/os"
-    value = "linux"
-  }
-  set {
-    name  = "defaultBackend.nodeSelector.kubernetes\\.io/os"
-    value = "linux"
-  }
-  set {
-    name  = "controller.admissionWebhooks.patch.nodeSelector.kubernetes\\.io/os"
-    value = "linux"
-  }
-  set {
-    name  = "controller.service.externalTrafficPolicy"
-    value = "Local"
+
+  cluster_name      = module.eks.cluster_name
+  cluster_endpoint  = module.eks.cluster_endpoint
+  cluster_version   = module.eks.cluster_version
+  oidc_provider_arn = module.eks.oidc_provider_arn
+
+  enable_ingress_nginx = true
+
+  ingress_nginx = {
+    name          = "besu-ingress-nginx"
+    namespace     = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
+    chart         = "ingress-nginx"
+    chart_version = "4.7.1"
+    repository    = "https://kubernetes.github.io/ingress-nginx"
+    wait          = true
+
+    values = [
+      <<-EOT
+          controller:
+            replicaCount: 2
+            service:
+              annotations:
+                service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+                service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+                service.beta.kubernetes.io/aws-load-balancer-security-groups: ${aws_security_group.besu-ingress-nginx.id}
+                service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: true
+              loadBalancerClass: service.k8s.aws/nlb
+            topologySpreadConstraints:
+              - maxSkew: 1
+                topologyKey: topology.kubernetes.io/zone
+                whenUnsatisfiable: ScheduleAnyway
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: besu-ingress-nginx
+              - maxSkew: 1
+                topologyKey: kubernetes.io/hostname
+                whenUnsatisfiable: ScheduleAnyway
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: besu-ingress-nginx
+            minAvailable: 1
+            ingressClassResource:
+              name: besu-ingress-nginx
+              enabled: true
+              default: false
+              controllerValue: k8s.io/besu-ingress-nginx
+
+        EOT
+    ]
   }
 }
 resource "kubectl_manifest" "ingress-rules-besu" {
-  depends_on = [time_sleep.wait_for_member-2, helm_release.besu-ingress-nginx]
+  depends_on = [time_sleep.wait_for_member-2, module.besu-ingress-nginx]
   yaml_body  = file("${path.module}/quorum-kubernetes/ingress/ingress-rules-besu.yml")
 }
 

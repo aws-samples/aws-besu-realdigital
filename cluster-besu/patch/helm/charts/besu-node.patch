@@ -1,6 +1,6 @@
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/azure-secret-provider-class.yaml quorum-kubernetes/helm/charts/besu-node/templates/azure-secret-provider-class.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-node/templates/azure-secret-provider-class.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-node/templates/azure-secret-provider-class.yaml	2023-10-04 15:47:25
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/azure-secret-provider-class.yaml quorum-kubernetes/helm/charts/besu-node/templates/azure-secret-provider-class.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/templates/azure-secret-provider-class.yaml	2024-01-27 15:24:58.543959300 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/azure-secret-provider-class.yaml	2024-01-27 18:11:37.667168500 -0300
 @@ -1,51 +0,0 @@
 -{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
 ----
@@ -54,9 +54,18 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/a
 -      {{- end }}
 -{{- end }}
 \ No newline at end of file
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml	2023-10-04 15:47:25
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/besu-config-configmap.yaml quorum-kubernetes/helm/charts/besu-node/templates/besu-config-configmap.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/templates/besu-config-configmap.yaml	2024-01-27 15:24:49.027397500 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/besu-config-configmap.yaml	2024-02-02 09:54:36.508912200 -0300
+@@ -112,3 +112,4 @@
+     metrics-push-interval={{ .Values.node.besu.metricsPush.interval }}
+     metrics-push-prometheus-job={{ .Values.node.besu.metricsPush.prometheusJob | quote }}
+     {{ end }}
++    
+\ No newline at end of file
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml	2024-01-27 15:24:58.569960900 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-delete.yaml	2024-01-27 18:11:37.682361900 -0300
 @@ -9,9 +9,6 @@
      helm.sh/hook-weight: "0"
      helm.sh/hook-delete-policy: "hook-succeeded"
@@ -77,7 +86,7 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
          app.kubernetes.io/name: pre-delete-hook
          app.kubernetes.io/instance: {{ .Release.Name }} 
      spec:
-@@ -45,40 +39,23 @@
+@@ -45,24 +39,9 @@
              - -c
            args:
              - |
@@ -85,10 +94,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
                echo "{{ template "besu-node.fullname" . }} Pre Delete hook ..."
  
 -{{- if and (eq .Values.cluster.provider "azure") (.Values.cluster.cloudNativeServices) }}
-+{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
- 
-               function deleteSecret {
-                 key=$1
+-
+-              function deleteSecret {
+-                key=$1
 -                fpath=$2
 -                az keyvault secret show --vault-name {{ .Values.azure.keyvaultName }} --name $key > /dev/null 2>&1
 -                if [ $? -eq 0 ]; then
@@ -100,11 +108,11 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
 -              az account set --subscription {{ .Values.azure.subscriptionId }}
 -
 -{{- else if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
--
--              function deleteSecret {
--                key=$1
-                 aws secretsmanager describe-secret --secret-id $key > /dev/null 2>&1
-                 if [ $? -eq 0 ]; then
++{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
+ 
+               function deleteSecret {
+                 key=$1
+@@ -71,14 +50,12 @@
                    aws secretsmanager delete-secret --secret-id $key --recovery-window-in-days 7
                  fi
                }
@@ -146,9 +154,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
  
                echo "Completed"
 -
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-pre-install.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-install.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-pre-install.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-install.yaml	2023-10-04 15:47:25
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-pre-install.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-install.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-pre-install.yaml	2024-01-27 15:24:58.588959600 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-pre-install.yaml	2024-01-27 18:11:37.691326600 -0300
 @@ -9,9 +9,6 @@
      "helm.sh/hook-weight": "0"
      "helm.sh/hook-delete-policy": "hook-succeeded"
@@ -194,11 +202,11 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
 -                  az keyvault secret show --vault-name {{ .Values.azure.keyvaultName }} --name $key | jq -r '.value' > $fpath
 -                fi
 -              }
-+{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
- 
+-
 -              az login --identity --debug
 -              az account set --subscription {{ .Values.azure.subscriptionId }}
--
++{{- if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
+ 
 -{{- else if and (eq .Values.cluster.provider "aws") (.Values.cluster.cloudNativeServices) }}
                function safeWriteSecret {
                  key=$1
@@ -255,9 +263,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
                safeWriteSecret {{ template "besu-node.fullname" . }}-tmkey $FOLDER_PATH/member0/tessera.key
                safeWriteSecret {{ template "besu-node.fullname" . }}-tmkeypub $FOLDER_PATH/member0/tessera.pub
                safeWriteSecret {{ template "besu-node.fullname" . }}-tmpassword $FOLDER_PATH/member0/passwordFile.txt
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-service-account.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-service-account.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-service-account.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-service-account.yaml	2023-10-04 15:47:25
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-service-account.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-service-account.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-hooks-service-account.yaml	2024-01-27 15:24:58.615964300 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-hooks-service-account.yaml	2024-01-27 18:11:37.705336400 -0300
 @@ -6,7 +6,7 @@
    namespace: {{ .Release.Namespace }}
    annotations:
@@ -291,9 +299,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
  {{- end}}
 -
 -
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-service-account.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-service-account.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-service-account.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-node/templates/node-service-account.yaml	2023-10-04 15:47:25
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-service-account.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-service-account.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-service-account.yaml	2024-01-27 15:24:58.641959100 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-service-account.yaml	2024-01-27 18:11:37.717341200 -0300
 @@ -32,9 +32,7 @@
  subjects:
  - kind: ServiceAccount
@@ -305,9 +313,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
    name: {{ .Values.aws.serviceAccountName }}
  {{- else }}
    name: {{ include "besu-node.fullname" . }}-sa
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-service.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-service.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-service.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-node/templates/node-service.yaml	2023-10-04 15:47:25
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-service.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-service.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-service.yaml	2024-01-27 15:24:49.083395100 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-service.yaml	2024-01-27 18:11:37.728341000 -0300
 @@ -43,7 +43,7 @@
        targetPort: metrics
        protocol: TCP
@@ -343,9 +351,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
 -{{- end }}
 \ No newline at end of file
 +{{- end }}
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-statefulset.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-statefulset.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-statefulset.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-node/templates/node-statefulset.yaml	2023-10-04 19:28:07
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-statefulset.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-statefulset.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-statefulset.yaml	2024-01-27 15:24:58.659964600 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-statefulset.yaml	2024-01-27 18:11:37.742379000 -0300
 @@ -4,9 +4,6 @@
  metadata:
    name: {{ template "besu-node.fullname" . }}
@@ -408,18 +416,17 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
  {{- end }}
            - name: genesis
              mountPath: /etc/genesis
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-storage.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-storage.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-storage.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-node/templates/node-storage.yaml	2023-10-04 20:12:31
-@@ -1,32 +1,19 @@
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-storage.yaml quorum-kubernetes/helm/charts/besu-node/templates/node-storage.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/templates/node-storage.yaml	2024-01-27 15:24:49.105395000 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/node-storage.yaml	2024-01-27 18:11:37.756342300 -0300
+@@ -1,23 +1,4 @@
 -{{- if eq .Values.cluster.provider "azure" }}
-+{{- if eq .Values.cluster.provider "aws" }}
- ---
- apiVersion: storage.k8s.io/v1
- kind: StorageClass
- metadata:
-   name: {{ include "besu-node.fullname" . }}-storage
-   namespace: {{ .Release.Namespace }}
+----
+-apiVersion: storage.k8s.io/v1
+-kind: StorageClass
+-metadata:
+-  name: {{ include "besu-node.fullname" . }}-storage
+-  namespace: {{ .Release.Namespace }}
 -provisioner: kubernetes.io/azure-file
 -reclaimPolicy: {{ .Values.cluster.reclaimPolicy }}
 -allowVolumeExpansion: true
@@ -433,12 +440,11 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
 -  skuName: Standard_LRS
 -
 -{{- else if eq .Values.cluster.provider "aws" }}
-----
--apiVersion: storage.k8s.io/v1
--kind: StorageClass
--metadata:
--  name: {{ include "besu-node.fullname" . }}-storage
--  namespace: {{ .Release.Namespace }}
++{{- if eq .Values.cluster.provider "aws" }}
+ ---
+ apiVersion: storage.k8s.io/v1
+ kind: StorageClass
+@@ -27,6 +8,12 @@
  provisioner: {{ .Values.storage.aws.provisioner }}
  reclaimPolicy: {{ .Values.cluster.reclaimPolicy }}
  allowVolumeExpansion: true
@@ -464,9 +470,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/n
  
  {{- end }}
 -
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/permissions-configmap.yaml quorum-kubernetes/helm/charts/besu-node/templates/permissions-configmap.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-node/templates/permissions-configmap.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-node/templates/permissions-configmap.yaml	2023-10-04 15:47:25
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/permissions-configmap.yaml quorum-kubernetes/helm/charts/besu-node/templates/permissions-configmap.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/templates/permissions-configmap.yaml	2024-01-27 15:24:49.116396200 -0300
++++ quorum-kubernetes/helm/charts/besu-node/templates/permissions-configmap.yaml	2024-01-27 18:11:37.768341300 -0300
 @@ -16,5 +16,4 @@
  
      accounts-allowlist={{ .Values.node.besu.permissions.accounts.allowlist }}
@@ -474,10 +480,10 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/templates/p
 -
  {{- end -}}
 \ No newline at end of file
-diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/values.yaml quorum-kubernetes/helm/charts/besu-node/values.yaml
---- quorum-kubernetes-consensys/helm/charts/besu-node/values.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/charts/besu-node/values.yaml	2023-10-04 15:47:25
-@@ -8,27 +8,16 @@
+diff -Naur quorum-kubernetes-consensys/helm/charts/besu-node/values.yaml quorum-kubernetes/helm/charts/besu-node/values.yaml
+--- quorum-kubernetes-consensys/helm/charts/besu-node/values.yaml	2024-01-27 15:24:58.691964500 -0300
++++ quorum-kubernetes/helm/charts/besu-node/values.yaml	2024-01-27 18:11:37.781379600 -0300
+@@ -8,26 +8,15 @@
    usesBootnodes: true # set this to true if the network you are connecting to use a bootnode/s that are deployed in the cluster 
  
  cluster:
@@ -492,8 +498,7 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/values.yaml
    serviceAccountName: quorum-node-secrets-sa
    # the region you are deploying to
 -  region: ap-southeast-2
-+  region: us-east-1
- 
+-
 -azure:
 -  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
 -  identityName: quorum-pod-identity
@@ -504,10 +509,10 @@ diff --color -Naur quorum-kubernetes-consensys/helm/charts/besu-node/values.yaml
 -  tenantId: azure-tenantId
 -  # the subscription ID to use - this needs to be set explictly when using multi tenancy
 -  subscriptionId: azure-subscriptionId
--
++  region: us-east-1
+ 
  storage:
    sizeLimit: "20Gi"
-   pvcSizeLimit: "20Gi"
 @@ -60,6 +49,7 @@
      privateKeyPath: "/keys/nodekey"
      genesisFilePath: "/etc/genesis/genesis.json"

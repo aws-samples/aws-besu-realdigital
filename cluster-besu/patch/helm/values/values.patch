@@ -1,6 +1,6 @@
-diff --color -Naur quorum-kubernetes-consensys/helm/values/blockscout-goquorum.yml quorum-kubernetes/helm/values/blockscout-goquorum.yml
---- quorum-kubernetes-consensys/helm/values/blockscout-goquorum.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/blockscout-goquorum.yml	2023-10-04 15:47:37
+diff -Naur quorum-kubernetes-consensys/helm/values/blockscout-goquorum.yml quorum-kubernetes/helm/values/blockscout-goquorum.yml
+--- quorum-kubernetes-consensys/helm/values/blockscout-goquorum.yml	2024-01-27 15:24:49.620089600 -0300
++++ quorum-kubernetes/helm/values/blockscout-goquorum.yml	2024-01-27 18:11:44.303853000 -0300
 @@ -1,33 +0,0 @@
 ----
 -image:
@@ -35,9 +35,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/blockscout-goquorum.y
 -  ethereum_jsonrpc_transport: http
 -  ethereum_jsonrpc_endpoint: "goquorum-node-member-1" # service name to be used
 -  secret_key_base: "VTIB3uHDNbvrY0+60ZWgUoUBKDn9ppLR8MI4CpRz4/qLyEFs54ktJfaNT6Z221" # change me please
-diff --color -Naur quorum-kubernetes-consensys/helm/values/bootnode.yml quorum-kubernetes/helm/values/bootnode.yml
---- quorum-kubernetes-consensys/helm/values/bootnode.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/bootnode.yml	2023-10-04 22:47:13
+diff -Naur quorum-kubernetes-consensys/helm/values/bootnode.yml quorum-kubernetes/helm/values/bootnode.yml
+--- quorum-kubernetes-consensys/helm/values/bootnode.yml	2024-01-27 15:24:59.518610500 -0300
++++ quorum-kubernetes/helm/values/bootnode.yml	2024-01-27 18:11:44.319862000 -0300
 @@ -7,30 +7,19 @@
    usesBootnodes: true # Besu only, set this to true if the network you are connecting to use a bootnode/s that are deployed in the cluster 
  
@@ -53,8 +53,7 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/bootnode.yml quorum-k
    serviceAccountName: quorum-node-secrets-sa
    # the region you are deploying to
 -  region: ap-southeast-2
-+  region: us-east-1
- 
+-
 -azure:
 -  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
 -  identityName: quorum-pod-identity
@@ -65,7 +64,8 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/bootnode.yml quorum-k
 -  tenantId: azure-tenantId
 -  # the subscription ID to use - this needs to be set explictly when using multi tenancy
 -  subscriptionId: azure-subscriptionId
--
++  region: us-east-1
+ 
  node:
    besu:
 -    envBesuOpts: ""  
@@ -80,9 +80,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/bootnode.yml quorum-k
 -
 +    logging: INFO
 +    overwrite: true
-diff --color -Naur quorum-kubernetes-consensys/helm/values/explorer-besu.yaml quorum-kubernetes/helm/values/explorer-besu.yaml
---- quorum-kubernetes-consensys/helm/values/explorer-besu.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/explorer-besu.yaml	2023-10-04 22:47:52
+diff -Naur quorum-kubernetes-consensys/helm/values/explorer-besu.yaml quorum-kubernetes/helm/values/explorer-besu.yaml
+--- quorum-kubernetes-consensys/helm/values/explorer-besu.yaml	2024-01-27 15:24:49.640088000 -0300
++++ quorum-kubernetes/helm/values/explorer-besu.yaml	2024-01-27 18:11:44.332863000 -0300
 @@ -16,50 +16,54 @@
    "nodes": [{
        "name": "validator1",
@@ -126,28 +126,29 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/explorer-besu.yaml qu
      {
 -      "name": "member2",
 +      "name": "validator6",
++      "client": "besu",
++      "rpcUrl": "http://besu-node-validator-6.besu.svc.cluster.local:8545",
++      "privateTxUrl": ""
++    },
++    {
++      "name": "member1",
        "client": "besu",
 -      "rpcUrl": "http://besu-node-member-2-0.besu-node-member-2.quorum.svc.cluster.local:8545",
 -      "privateTxUrl": "http://besu-node-member-2.quorum.svc.cluster.local:9080",
 -      "privateKey": "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3",
 -      "accountAddress": "0x627306090abaB3A6e1400e9345bC60c78a8BEf57"
-+      "rpcUrl": "http://besu-node-validator-6.besu.svc.cluster.local:8545",
-+      "privateTxUrl": ""
-     },
-     {
--      "name": "member3",
-+      "name": "member1",
-       "client": "besu",
--      "rpcUrl": "http://besu-node-member-3-0.besu-node-member-3.quorum.svc.cluster.local:8545",
--      "privateTxUrl": "http://besu-node-member-3.quorum.svc.cluster.local:9080",
--      "privateKey": "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f",
--      "accountAddress": "0xf17f52151EbEF6C7334FAD080c5704D77216b732"
 +      "rpcUrl": "http://besu-node-member-1.besu.svc.cluster.local:8545",
 +      "privateTxUrl": "http://besu-node-member-1.besu.svc.cluster.local:9080",
 +      "privateKey": "0x6b5ee9334c05d09eb935d90b3227e6922fcc70dca315f9a970973b7ade7e58ca",
 +      "accountAddress": "0x16b66b29c7a88cb91f51946db99de77e21dcb155"
-+    },
-+    {
+     },
+     {
+-      "name": "member3",
+-      "client": "besu",
+-      "rpcUrl": "http://besu-node-member-3-0.besu-node-member-3.quorum.svc.cluster.local:8545",
+-      "privateTxUrl": "http://besu-node-member-3.quorum.svc.cluster.local:9080",
+-      "privateKey": "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f",
+-      "accountAddress": "0xf17f52151EbEF6C7334FAD080c5704D77216b732"
 +      "name": "member2",
 +      "client": "besu",
 +      "rpcUrl": "http://besu-node-member-2.besu.svc.cluster.local:8545",
@@ -157,9 +158,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/explorer-besu.yaml qu
      }
    ]
    }
-diff --color -Naur quorum-kubernetes-consensys/helm/values/explorer-goquorum.yaml quorum-kubernetes/helm/values/explorer-goquorum.yaml
---- quorum-kubernetes-consensys/helm/values/explorer-goquorum.yaml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/explorer-goquorum.yaml	2023-10-04 15:47:37
+diff -Naur quorum-kubernetes-consensys/helm/values/explorer-goquorum.yaml quorum-kubernetes/helm/values/explorer-goquorum.yaml
+--- quorum-kubernetes-consensys/helm/values/explorer-goquorum.yaml	2024-01-27 15:24:49.648088700 -0300
++++ quorum-kubernetes/helm/values/explorer-goquorum.yaml	2024-01-27 18:11:44.342865600 -0300
 @@ -1,117 +0,0 @@
 -image:
 -  explorer:
@@ -279,10 +280,10 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/explorer-goquorum.yam
 -  SLACK_CLIENT_ID=
 -  SLACK_CLIENT_SECRET=
 \ No newline at end of file
-diff --color -Naur quorum-kubernetes-consensys/helm/values/genesis-besu.yml quorum-kubernetes/helm/values/genesis-besu.yml
---- quorum-kubernetes-consensys/helm/values/genesis-besu.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/genesis-besu.yml	2023-10-04 19:03:46
-@@ -3,26 +3,15 @@
+diff -Naur quorum-kubernetes-consensys/helm/values/genesis-besu.yml quorum-kubernetes/helm/values/genesis-besu.yml
+--- quorum-kubernetes-consensys/helm/values/genesis-besu.yml	2024-01-27 15:24:59.553610700 -0300
++++ quorum-kubernetes/helm/values/genesis-besu.yml	2024-01-27 18:11:44.361896300 -0300
+@@ -3,25 +3,14 @@
    removeGenesisOnDelete: true
  
  cluster:
@@ -296,8 +297,7 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/genesis-besu.yml quor
    serviceAccountName: quorum-node-secrets-sa
    # the region you are deploying to
 -  region: ap-southeast-2
-+  region: us-east-1
- 
+-
 -azure:
 -  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
 -  identityName: quorum-pod-identity
@@ -308,11 +308,25 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/genesis-besu.yml quor
 -  tenantId: azure-tenantId
 -  # the subscription ID to use - this needs to be set explictly when using multi tenancy
 -  subscriptionId: azure-subscriptionId
--
++  region: us-east-1
+ 
  # the raw Genesis config
  # rawGenesisConfig.blockchain.nodes set the number of validators/signers
- rawGenesisConfig:
-@@ -41,5 +30,6 @@
+@@ -29,17 +18,19 @@
+   genesis:
+     config:
+       chainId: 1337
++      contractSizeLimit: 2147483647
+       algorithm:
+         consensus: qbft # choose from: ibft2 | qbft | clique
+         blockperiodseconds: 5
+         epochlength: 30000
+         requesttimeoutseconds: 20
+-    gasLimit: '0x47b760'
++    gasLimit: '0x1ffffffffffff'
+     difficulty: '0x1'
+     coinbase: '0x0000000000000000000000000000000000000000'
+     includeQuickStartAccounts: false # set to true if you would like to use the quorum-dev-quickstart test accounts. This setting will be forced false if cloudNativeServices is set to true which is assuming a prod environment
    blockchain:
      nodes:
        generate: true
@@ -320,9 +334,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/genesis-besu.yml quor
 +      overwrite: true
 +      count: 6
      accountPassword: 'password'
-diff --color -Naur quorum-kubernetes-consensys/helm/values/genesis-goquorum.yml quorum-kubernetes/helm/values/genesis-goquorum.yml
---- quorum-kubernetes-consensys/helm/values/genesis-goquorum.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/genesis-goquorum.yml	2023-10-04 15:47:37
+diff -Naur quorum-kubernetes-consensys/helm/values/genesis-goquorum.yml quorum-kubernetes/helm/values/genesis-goquorum.yml
+--- quorum-kubernetes-consensys/helm/values/genesis-goquorum.yml	2024-01-27 15:24:59.607608700 -0300
++++ quorum-kubernetes/helm/values/genesis-goquorum.yml	2024-01-27 18:11:44.374885700 -0300
 @@ -1,46 +0,0 @@
 ----
 -quorumFlags:
@@ -370,9 +384,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/genesis-goquorum.yml 
 -      generate: true
 -      count: 4
 -    accountPassword: 'password'
-diff --color -Naur quorum-kubernetes-consensys/helm/values/kibana.yml quorum-kubernetes/helm/values/kibana.yml
---- quorum-kubernetes-consensys/helm/values/kibana.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/kibana.yml	2023-10-04 15:47:37
+diff -Naur quorum-kubernetes-consensys/helm/values/kibana.yml quorum-kubernetes/helm/values/kibana.yml
+--- quorum-kubernetes-consensys/helm/values/kibana.yml	2024-01-27 15:24:49.687089500 -0300
++++ quorum-kubernetes/helm/values/kibana.yml	2024-01-27 18:11:44.393863900 -0300
 @@ -126,9 +126,6 @@
      {}
      # cloud.google.com/load-balancer-type: "Internal"
@@ -383,9 +397,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/kibana.yml quorum-kub
    loadBalancerSourceRanges:
      []
    # 0.0.0.0/0
-diff --color -Naur quorum-kubernetes-consensys/helm/values/monitoring/alerting-besu-nodes.yml quorum-kubernetes/helm/values/monitoring/alerting-besu-nodes.yml
---- quorum-kubernetes-consensys/helm/values/monitoring/alerting-besu-nodes.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/monitoring/alerting-besu-nodes.yml	2023-10-04 15:47:37
+diff -Naur quorum-kubernetes-consensys/helm/values/monitoring/alerting-besu-nodes.yml quorum-kubernetes/helm/values/monitoring/alerting-besu-nodes.yml
+--- quorum-kubernetes-consensys/helm/values/monitoring/alerting-besu-nodes.yml	2024-01-27 15:24:49.732109300 -0300
++++ quorum-kubernetes/helm/values/monitoring/alerting-besu-nodes.yml	2024-01-27 18:11:44.407868000 -0300
 @@ -5,7 +5,7 @@
    labels:
      app: besu
@@ -395,9 +409,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/monitoring/alerting-b
  spec:
    groups:
    - name: besu-chain-stalled
-diff --color -Naur quorum-kubernetes-consensys/helm/values/monitoring/grafana-besu-dashboard.yml quorum-kubernetes/helm/values/monitoring/grafana-besu-dashboard.yml
---- quorum-kubernetes-consensys/helm/values/monitoring/grafana-besu-dashboard.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/monitoring/grafana-besu-dashboard.yml	2023-10-04 15:47:37
+diff -Naur quorum-kubernetes-consensys/helm/values/monitoring/grafana-besu-dashboard.yml quorum-kubernetes/helm/values/monitoring/grafana-besu-dashboard.yml
+--- quorum-kubernetes-consensys/helm/values/monitoring/grafana-besu-dashboard.yml	2024-01-27 15:24:49.753089600 -0300
++++ quorum-kubernetes/helm/values/monitoring/grafana-besu-dashboard.yml	2024-01-27 18:11:44.432863500 -0300
 @@ -2,7 +2,7 @@
  kind: ConfigMap
  metadata:
@@ -407,9 +421,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/monitoring/grafana-be
    labels:
      grafana_dashboard: "1"
  data:
-diff --color -Naur quorum-kubernetes-consensys/helm/values/monitoring/grafana-goquorum-dashboard.yml quorum-kubernetes/helm/values/monitoring/grafana-goquorum-dashboard.yml
---- quorum-kubernetes-consensys/helm/values/monitoring/grafana-goquorum-dashboard.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/monitoring/grafana-goquorum-dashboard.yml	2023-10-04 15:47:37
+diff -Naur quorum-kubernetes-consensys/helm/values/monitoring/grafana-goquorum-dashboard.yml quorum-kubernetes/helm/values/monitoring/grafana-goquorum-dashboard.yml
+--- quorum-kubernetes-consensys/helm/values/monitoring/grafana-goquorum-dashboard.yml	2024-01-27 15:24:49.766090600 -0300
++++ quorum-kubernetes/helm/values/monitoring/grafana-goquorum-dashboard.yml	2024-01-27 18:11:44.445863500 -0300
 @@ -1,2220 +0,0 @@
 -apiVersion: v1
 -kind: ConfigMap
@@ -2632,10 +2646,10 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/monitoring/grafana-go
 -        "version": 1
 -      }        
 \ No newline at end of file
-diff --color -Naur quorum-kubernetes-consensys/helm/values/reader.yml quorum-kubernetes/helm/values/reader.yml
---- quorum-kubernetes-consensys/helm/values/reader.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/reader.yml	2023-10-04 22:48:19
-@@ -4,30 +4,19 @@
+diff -Naur quorum-kubernetes-consensys/helm/values/reader.yml quorum-kubernetes/helm/values/reader.yml
+--- quorum-kubernetes-consensys/helm/values/reader.yml	2024-01-27 15:24:59.669644100 -0300
++++ quorum-kubernetes/helm/values/reader.yml	2024-01-27 18:11:44.468861900 -0300
+@@ -4,29 +4,18 @@
    privacy: false
    removeKeysOnDelete: true
    isBootnode: false    # Besu only, set this to true if this node is a bootnode
@@ -2654,8 +2668,7 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/reader.yml quorum-kub
    serviceAccountName: quorum-node-secrets-sa
    # the region you are deploying to
 -  region: ap-southeast-2
-+  region: us-east-1
- 
+-
 -azure:
 -  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
 -  identityName: quorum-pod-identity
@@ -2666,10 +2679,10 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/reader.yml quorum-kub
 -  tenantId: azure-tenantId
 -  # the subscription ID to use - this needs to be set explictly when using multi tenancy
 -  subscriptionId: azure-subscriptionId
--
++  region: us-east-1
+ 
  node:
    besu:
-     envBesuOpts: ""  
 @@ -40,15 +29,17 @@
        memRequest: "1G"
      account:
@@ -2699,10 +2712,10 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/reader.yml quorum-kub
    tessera:
      password: 'password'
 \ No newline at end of file
-diff --color -Naur quorum-kubernetes-consensys/helm/values/txnode.yml quorum-kubernetes/helm/values/txnode.yml
---- quorum-kubernetes-consensys/helm/values/txnode.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/txnode.yml	2023-10-04 22:48:24
-@@ -4,30 +4,19 @@
+diff -Naur quorum-kubernetes-consensys/helm/values/txnode.yml quorum-kubernetes/helm/values/txnode.yml
+--- quorum-kubernetes-consensys/helm/values/txnode.yml	2024-01-27 15:24:59.724607900 -0300
++++ quorum-kubernetes/helm/values/txnode.yml	2024-01-27 18:11:44.482862400 -0300
+@@ -4,29 +4,18 @@
    privacy: true
    removeKeysOnDelete: true
    isBootnode: false    # Besu only, set this to true if this node is a bootnode
@@ -2721,8 +2734,7 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/txnode.yml quorum-kub
    serviceAccountName: quorum-node-secrets-sa
    # the region you are deploying to
 -  region: ap-southeast-2
-+  region: us-east-1
- 
+-
 -azure:
 -  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
 -  identityName: quorum-pod-identity
@@ -2733,10 +2745,10 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/txnode.yml quorum-kub
 -  tenantId: azure-tenantId
 -  # the subscription ID to use - this needs to be set explictly when using multi tenancy
 -  subscriptionId: azure-subscriptionId
--
++  region: us-east-1
+ 
  node:
    besu:
-     envBesuOpts: ""  
 @@ -40,6 +29,8 @@
        memRequest: "1G"
      account:
@@ -2752,9 +2764,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/txnode.yml quorum-kub
      password: 'password'
 -    
 \ No newline at end of file
-diff --color -Naur quorum-kubernetes-consensys/helm/values/validator-a.yml quorum-kubernetes/helm/values/validator-a.yml
---- quorum-kubernetes-consensys/helm/values/validator-a.yml	1969-12-31 21:00:00
-+++ quorum-kubernetes/helm/values/validator-a.yml	2023-10-04 22:48:58
+diff -Naur quorum-kubernetes-consensys/helm/values/validator-a.yml quorum-kubernetes/helm/values/validator-a.yml
+--- quorum-kubernetes-consensys/helm/values/validator-a.yml	1969-12-31 21:00:00.000000000 -0300
++++ quorum-kubernetes/helm/values/validator-a.yml	2024-01-27 18:11:44.498866700 -0300
 @@ -0,0 +1,41 @@
 +---
 +
@@ -2797,9 +2809,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/validator-a.yml quoru
 +      cpuRequest: 0.1
 +      memLimit: "2G"
 +      memRequest: "1G"
-diff --color -Naur quorum-kubernetes-consensys/helm/values/validator-b.yml quorum-kubernetes/helm/values/validator-b.yml
---- quorum-kubernetes-consensys/helm/values/validator-b.yml	1969-12-31 21:00:00
-+++ quorum-kubernetes/helm/values/validator-b.yml	2023-10-04 22:49:03
+diff -Naur quorum-kubernetes-consensys/helm/values/validator-b.yml quorum-kubernetes/helm/values/validator-b.yml
+--- quorum-kubernetes-consensys/helm/values/validator-b.yml	1969-12-31 21:00:00.000000000 -0300
++++ quorum-kubernetes/helm/values/validator-b.yml	2024-01-27 18:11:44.509868900 -0300
 @@ -0,0 +1,41 @@
 +---
 +
@@ -2842,9 +2854,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/validator-b.yml quoru
 +      cpuRequest: 0.1
 +      memLimit: "2G"
 +      memRequest: "1G"
-diff --color -Naur quorum-kubernetes-consensys/helm/values/validator-c.yml quorum-kubernetes/helm/values/validator-c.yml
---- quorum-kubernetes-consensys/helm/values/validator-c.yml	1969-12-31 21:00:00
-+++ quorum-kubernetes/helm/values/validator-c.yml	2023-10-04 22:49:09
+diff -Naur quorum-kubernetes-consensys/helm/values/validator-c.yml quorum-kubernetes/helm/values/validator-c.yml
+--- quorum-kubernetes-consensys/helm/values/validator-c.yml	1969-12-31 21:00:00.000000000 -0300
++++ quorum-kubernetes/helm/values/validator-c.yml	2024-01-27 18:11:44.517864200 -0300
 @@ -0,0 +1,41 @@
 +---
 +
@@ -2887,9 +2899,9 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/validator-c.yml quoru
 +      cpuRequest: 0.1
 +      memLimit: "2G"
 +      memRequest: "1G"
-diff --color -Naur quorum-kubernetes-consensys/helm/values/validator.yml quorum-kubernetes/helm/values/validator.yml
---- quorum-kubernetes-consensys/helm/values/validator.yml	2023-10-04 22:40:36
-+++ quorum-kubernetes/helm/values/validator.yml	2023-10-04 22:49:24
+diff -Naur quorum-kubernetes-consensys/helm/values/validator.yml quorum-kubernetes/helm/values/validator.yml
+--- quorum-kubernetes-consensys/helm/values/validator.yml	2024-01-27 15:24:59.760631800 -0300
++++ quorum-kubernetes/helm/values/validator.yml	2024-01-27 18:11:44.531861900 -0300
 @@ -2,35 +2,24 @@
  
  quorumFlags:
@@ -2912,8 +2924,7 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/validator.yml quorum-
    serviceAccountName: quorum-node-secrets-sa
    # the region you are deploying to
 -  region: ap-southeast-2
-+  region: us-east-1
- 
+-
 -azure:
 -  # the script/bootstrap.sh uses the name 'quorum-pod-identity' so only change this if you altered the name
 -  identityName: quorum-pod-identity
@@ -2924,7 +2935,8 @@ diff --color -Naur quorum-kubernetes-consensys/helm/values/validator.yml quorum-
 -  tenantId: azure-tenantId
 -  # the subscription ID to use - this needs to be set explictly when using multi tenancy
 -  subscriptionId: azure-subscriptionId
--
++  region: us-east-1
+ 
  node:
    besu:
 -    envBesuOpts: ""  
