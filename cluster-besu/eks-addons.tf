@@ -171,7 +171,7 @@ module "iam_role_ebs_csi" {
 
 module "eks_blueprints_addons" {
   source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.0"
+  version = "~> 1.12"
 
   depends_on        = [module.iam_role_ebs_csi]
   cluster_name      = module.eks.cluster_name
@@ -198,15 +198,34 @@ module "eks_blueprints_addons" {
   }
 
   enable_aws_load_balancer_controller = true
+  #   aws_load_balancer_controller = {
+  #     wait = true
+  #   }
   aws_load_balancer_controller = {
-    wait = true
+    set = [
+      {
+        name  = "vpcId"
+        value = module.vpc.vpc_id # Explicitly set VPC ID
+      },
+      {
+        name  = "region"
+        value = local.region
+      },
+      {
+        name  = "clusterName"
+        value = module.eks.cluster_name
+      }
+    ]
   }
+
   enable_secrets_store_csi_driver              = true
   enable_secrets_store_csi_driver_provider_aws = true
   enable_karpenter                             = true
+  karpenter_enable_spot_termination            = true
   karpenter = {
     repository_username = data.aws_ecrpublic_authorization_token.token.user_name
     repository_password = data.aws_ecrpublic_authorization_token.token.password
+    chart_version       = "0.37.6"
   }
 
   tags = local.tags
