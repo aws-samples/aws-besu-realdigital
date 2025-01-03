@@ -226,6 +226,7 @@ module "eks_blueprints_addons" {
     repository_username = data.aws_ecrpublic_authorization_token.token.user_name
     repository_password = data.aws_ecrpublic_authorization_token.token.password
     chart_version       = "0.37.6"
+    namespace           = "kube-system"
   }
 
   tags = local.tags
@@ -235,6 +236,26 @@ resource "aws_ec2_tag" "karpenter_tag_cluster_primary_security_group" {
   resource_id = module.eks.cluster_primary_security_group_id
   key         = "karpenter.sh/discovery"
   value       = local.name
+}
+
+resource "kubernetes_storage_class" "ebs_sc" {
+  depends_on = [module.eks_blueprints_addons]
+  metadata {
+    name = "ebs-gp3-defaul-class"
+    annotations = {
+      "storageclass.kubernetes.io/is-default-class" = "true"
+    }
+  }
+
+  storage_provisioner = "ebs.csi.aws.com"
+  volume_binding_mode = "WaitForFirstConsumer"
+
+  parameters = {
+    type      = "gp3"
+    encrypted = "true"
+  }
+
+  allow_volume_expansion = true # Optional: allows volume expansion if needed
 }
 
 # # This should not affect the name of the cluster primary security group
