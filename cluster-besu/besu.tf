@@ -11,7 +11,7 @@ module "iam_policy_quorum_node_secrets" {
   "Statement": [{  
     "Effect": "Allow",
     "Action": ["secretsmanager:CreateSecret","secretsmanager:UpdateSecret","secretsmanager:DescribeSecret","secretsmanager:GetSecretValue","secretsmanager:PutSecretValue","secretsmanager:ReplicateSecretToRegions","secretsmanager:TagResource"],
-    "Resource": ["arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:besu-node-*"]
+    "Resource": ["arn:aws:secretsmanager:${local.region}:${data.aws_caller_identity.current.account_id}:secret:besu-node-*"]
   }]
 }
 EOF
@@ -34,7 +34,7 @@ module "iam_role_quorum_node_secrets" {
 }
 
 resource "kubernetes_namespace" "k8s-besu-namespace" {
-  depends_on = [module.iam_policy_quorum_node_secrets, module.iam_role_quorum_node_secrets, kubectl_manifest.karpenter_provisioner]
+  depends_on = [module.iam_policy_quorum_node_secrets, module.iam_role_quorum_node_secrets, kubectl_manifest.karpenter_provisioner, kubernetes_storage_class.ebs_sc]
   metadata {
     name = local.besu_namespace
   }
@@ -54,12 +54,19 @@ resource "helm_release" "monitoring" {
   name       = "monitoring"
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "kube-prometheus-stack"
-  version    = "34.10.0"
+  version    = "59.1.0"
   namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
   wait       = "true"
-  values = [
-    file("${path.module}/quorum-kubernetes/helm/values/monitoring.yml")
-  ]
+  # timeout    = 900 #15 minutes
+  # # Enable CRD installation
+  # set {
+  #   name  = "prometheusOperator.createCustomResource"
+  #   value = "true"
+  # }
+  # values = [
+  #   # file("${path.module}/quorum-kubernetes/helm/values/monitoring.yml")
+  #   file("${path.module}/kube-prometheus-values.yml")
+  # ]
 }
 
 resource "kubectl_manifest" "alerting-besu-nodes" {
@@ -141,7 +148,7 @@ resource "aws_security_group" "monitoring-ingress-nginx" {
 }
 module "monitoring-ingress-nginx" {
   source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.6"
+  version = "~> 1.12"
 
   depends_on = [helm_release.monitoring]
 
@@ -164,10 +171,22 @@ module "monitoring-ingress-nginx" {
       <<-EOT
           controller:
             replicaCount: 2
+            image:
+              registry: registry.k8s.io
+              image: ingress-nginx/controller
+              tag: "v1.8.1"
+              digest: ""
+            admissionWebhooks:
+              patch:
+                image:
+                  registry: registry.k8s.io
+                  image: ingress-nginx/kube-webhook-certgen
+                  tag: "v1.3.0"
+                  digest: ""
             service:
               annotations:
                 service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
-                service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+                service.beta.kubernetes.io/aws-load-balancer-scheme: internal
                 service.beta.kubernetes.io/aws-load-balancer-security-groups: ${aws_security_group.monitoring-ingress-nginx.id}
                 service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: true
               loadBalancerClass: service.k8s.aws/nlb
@@ -202,6 +221,7 @@ resource "kubectl_manifest" "ingress-rules-monitoring-ingress" {
 ######### CREATE BESU CLUSTER ##########
 resource "helm_release" "genesis" {
   depends_on = [kubectl_manifest.ingress-rules-monitoring-ingress, kubernetes_service_account.k8s-quorum-node-secrets-sa]
+  # depends_on = [kubernetes_service_account.k8s-quorum-node-secrets-sa]
   name       = "genesis"
   repository = "${path.module}/quorum-kubernetes/helm/charts"
   chart      = "besu-genesis"
@@ -457,7 +477,7 @@ resource "aws_security_group" "besu-ingress-nginx" {
 }
 module "besu-ingress-nginx" {
   source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.6"
+  version = "~> 1.12"
 
   depends_on = [helm_release.monitoring]
 
@@ -483,7 +503,7 @@ module "besu-ingress-nginx" {
             service:
               annotations:
                 service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
-                service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+                service.beta.kubernetes.io/aws-load-balancer-scheme: internal
                 service.beta.kubernetes.io/aws-load-balancer-security-groups: ${aws_security_group.besu-ingress-nginx.id}
                 service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: true
               loadBalancerClass: service.k8s.aws/nlb
