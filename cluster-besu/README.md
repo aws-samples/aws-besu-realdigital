@@ -4,16 +4,24 @@ Deploy Hyperledge Besu cluster using Hashicorp Terraform (IaC) and some AWS Serv
 
 ## Table of Contents
 
-1. [How to deploy Infrastructure and Besu cluster](#how-to-deploy)
-1. [Ingress Services](#ingress-services)
-1. [Configuring Index Pattern in Kibana](#configuring-index-pattern-in-kibana)
-1. [Testing Cluster Besu](#testing-cluster-besu)
-1. [Stop and Start Besu Services](#stop-and-start-besu)
-1. [Installing Sirato - Optional](#installing-sirato---optional)
-1. [Troubleshooting](#troubleshooting)
-1. [How to destroy infrastructure](#how-to-destroy)
+- [AWS - Real Digital with EKS and Terraform](#aws---real-digital-with-eks-and-terraform)
+  - [Table of Contents](#table-of-contents)
+  - [How to deploy Infrastructure and Besu Cluster](#how-to-deploy-infrastructure-and-besu-cluster)
+    - [Pre-reqs](#pre-reqs)
+    - [Validate and check EKS](#validate-and-check-eks)
+    - [Ingress Services](#ingress-services)
+      - [Monitoring Ingress controller LoadBalancer](#monitoring-ingress-controller-loadbalancer)
+      - [Grafana default credentials](#grafana-default-credentials)
+      - [Configuring Index Pattern in Kibana](#configuring-index-pattern-in-kibana)
+      - [Acessing Prometheus](#acessing-prometheus)
+    - [Testing Cluster Besu](#testing-cluster-besu)
+  - [Stop and Start Besu Services](#stop-and-start-besu-services)
+    - [Installing Chainlens - Optional](#installing-chainlens---optional)
+    - [Using blockscout - Optional](#using-blockscout---optional)
+  - [Troubleshooting](#troubleshooting)
+  - [How to destroy infrastructure](#how-to-destroy-infrastructure)
 
-## How to deploy
+## How to deploy Infrastructure and Besu Cluster
 
 ### Pre-reqs
 
@@ -80,7 +88,7 @@ echo "Explorer URL - http://${ELB_MONITOR}/explorer"
 
 #### Grafana default credentials
 
-- Username: admin, password: password
+- Username: admin, password: prom-operator, modify after first logging.
 
 #### Configuring Index Pattern in Kibana
 
@@ -108,7 +116,7 @@ curl -v -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","me
 echo "http://${ELB_BESU}/rpc"
 ```
 
-## Stop and Start Besu
+## Stop and Start Besu Services
 
 STOP
 
@@ -153,7 +161,7 @@ cd sirato-free/k8s
 kubectl get service/chainlens-proxy -n chainlens-explorer -ojsonpath='External: http://{.status.loadBalancer.ingress[0].hostname}{"\n"}'
 ```
 
-### Using blockscout
+### Using blockscout - Optional
 
 See [Blockscout sample](../samples/blockscout/README.md)
 
@@ -163,7 +171,7 @@ See [Blockscout sample](../samples/blockscout/README.md)
 kubectl run mycurlpod --rm --image=curlimages/curl -i --tty -- sh
 ```
 
-## How to destroy
+## How to destroy infrastructure
 
 ```bash
 kubectl delete namespace chainlens-explorer
