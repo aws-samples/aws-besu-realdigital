@@ -58,11 +58,6 @@ resource "helm_release" "monitoring" {
   namespace  = kubernetes_namespace.k8s-besu-namespace.metadata.0.name
   wait       = "true"
   # timeout    = 900 #15 minutes
-  # # Enable CRD installation
-  # set {
-  #   name  = "prometheusOperator.createCustomResource"
-  #   value = "true"
-  # }
   # values = [
   #   # file("${path.module}/quorum-kubernetes/helm/values/monitoring.yml")
   #   file("${path.module}/kube-prometheus-values.yml")
@@ -186,7 +181,7 @@ module "monitoring-ingress-nginx" {
             service:
               annotations:
                 service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
-                service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+                service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
                 service.beta.kubernetes.io/aws-load-balancer-security-groups: ${aws_security_group.monitoring-ingress-nginx.id}
                 service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: true
               loadBalancerClass: service.k8s.aws/nlb
@@ -503,7 +498,7 @@ module "besu-ingress-nginx" {
             service:
               annotations:
                 service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
-                service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+                service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
                 service.beta.kubernetes.io/aws-load-balancer-security-groups: ${aws_security_group.besu-ingress-nginx.id}
                 service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: true
               loadBalancerClass: service.k8s.aws/nlb
