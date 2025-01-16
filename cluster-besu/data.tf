@@ -13,7 +13,7 @@ data "aws_eks_cluster_auth" "this" {
   name = module.eks.cluster_name
 }
 
-# To Authenticate with ECR Public in eu-east-1
+# To Authenticate with ECR Public in us-east-1
 data "aws_ecrpublic_authorization_token" "token" {
   provider = aws.virginia
 }

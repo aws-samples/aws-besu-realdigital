@@ -1,6 +1,6 @@
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.13"
+  version = "~> 19.21.0"
 
   cluster_name                         = local.name
   cluster_version                      = local.cluster_version
@@ -9,8 +9,14 @@ module "eks" {
   cluster_endpoint_private_access      = local.cluster_endpoint_private_access
   cluster_enabled_log_types            = ["api", "audit", "authenticator", "controllerManager", "scheduler"] # Backwards compat
 
-  iam_role_name            = "${local.name}-cluster-role" # Backwards compat
-  iam_role_use_name_prefix = false                        # Backwards compat
+  # IAM Role configuration
+  create_iam_role = true
+  iam_role_name   = "${local.name}-cluster-role"
+  # iam_role_name            = "${local.name}-cluster-role" # Backwards compat
+  # iam_role_use_name_prefix = false                        # Backwards compat
+
+  # Use separate IAM policy resources instead of inline policies
+  attach_cluster_encryption_policy = true
 
   kms_key_aliases = [local.name] # Backwards compat
 

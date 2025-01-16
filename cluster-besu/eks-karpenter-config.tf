@@ -4,7 +4,7 @@
 
 resource "kubectl_manifest" "karpenter_provisioner" {
   yaml_body  = <<-YAML
-    apiVersion: karpenter.sh/v1beta1
+    apiVersion: karpenter.sh/v1
     kind: NodePool
     metadata:
       name: default
@@ -13,15 +13,15 @@ resource "kubectl_manifest" "karpenter_provisioner" {
         # consolidationPolicy: WhenUnderutilized
         consolidationPolicy: WhenEmpty
         consolidateAfter: 30s
-        expireAfter: 168h0m0s
       limits:
         cpu: "100"
       template:
         metadata: {}
         spec:
-          kubelet:
-            maxPods: 110
+          expireAfter: 168h0m0s
           nodeClassRef:
+            group: karpenter.k8s.aws
+            kind: EC2NodeClass
             name: default
           requirements:
           - key: karpenter.k8s.aws/instance-category
@@ -51,11 +51,13 @@ resource "kubectl_manifest" "karpenter_provisioner" {
 
 resource "kubectl_manifest" "karpenter_node_template" {
   yaml_body  = <<-YAML
-    apiVersion: karpenter.k8s.aws/v1beta1
+    apiVersion: karpenter.k8s.aws/v1
     kind: EC2NodeClass
     metadata:
       name: default
     spec:
+      kubelet:
+        maxPods: 110
       amiFamily: AL2
       role: ${module.eks_blueprints_addons.karpenter.node_iam_role_name}
       securityGroupSelectorTerms:

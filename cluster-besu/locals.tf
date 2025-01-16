@@ -1,9 +1,9 @@
 locals {
 
   name            = basename(path.cwd)
-  region          = data.aws_region.current.name
+  region          = "us-east-1"
   besu_namespace  = "besu"
-  cluster_version = "1.28"
+  cluster_version = "1.30"
 
   cluster_endpoint_public_access  = true
   allowed_public_cidrs            = ["0.0.0.0/0"]

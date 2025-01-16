@@ -1,7 +1,33 @@
-# Required for public ECR where Karpenter artifacts are hosted
 provider "aws" {
-  region = data.aws_region.current.name
+  region = local.region
+
+  # Add standard retry configuration
+  retry_mode  = "standard"
+  max_retries = 3
+
+  # Add default tags for all resources
+  default_tags {
+    tags = local.tags
+  }
+
+  # # Add assume role if needed for cross-account access
+  # assume_role {
+  #   role_arn = var.assume_role_arn
+  # }
+}
+
+# Secondary provider for ECR Public access in us-east-1
+provider "aws" {
+  region = "us-east-1"
   alias  = "virginia"
+
+  retry_mode  = "standard"
+  max_retries = 3
+
+  # Inherit the same tags
+  default_tags {
+    tags = local.tags
+  }
 }
 
 provider "kubernetes" {
